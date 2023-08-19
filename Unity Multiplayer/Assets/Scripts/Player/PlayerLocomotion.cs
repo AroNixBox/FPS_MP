@@ -101,13 +101,6 @@ public class PlayerLocomotion : NetworkBehaviour
         _spawnedObjectTransform.GetComponent<NetworkObject>().Spawn(true);
     }
     
-    //TESTSS
-
-    [ClientRpc]
-    private void TestClientRpc(ClientRpcParams clientRpcParams)
-    {
-        Debug.Log("testclient");
-    }
     public override void OnNetworkSpawn()
     {
         _randomNumber.OnValueChanged += (MyCustomData previousValue, MyCustomData newValue) =>
