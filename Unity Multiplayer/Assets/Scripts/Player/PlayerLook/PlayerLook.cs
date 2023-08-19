@@ -64,11 +64,11 @@ public class PlayerLook : NetworkBehaviour
     private void UpdateHeadRotationServerRpc(Quaternion newRotation)
     {
         // Senden Sie die neue Rotation an alle Clients
-        UpdateHeadRotationClientRpc(newRotation);
+        UpdateHeadRotationClientRpc(newRotation, rpcParams: default);
     }
 
     [ClientRpc]
-    private void UpdateHeadRotationClientRpc(Quaternion newRotation)
+    private void UpdateHeadRotationClientRpc(Quaternion newRotation, ClientRpcParams rpcParams = default)
     {
         // Aktualisieren Sie die Rotation des Kopfes auf allen Clients
         headBone.rotation = newRotation;

@@ -108,6 +108,7 @@ public class FootIK : NetworkBehaviour
         
         float target = IsCharacterMoving() ? 0f : 1f;
         _ikBlend = Mathf.Lerp(_ikBlend, target, Time.deltaTime * 2);
+        UpdateIKBlendServerRpc(_ikBlend);
     }
     private void LateUpdate()
     {
@@ -125,14 +126,20 @@ public class FootIK : NetworkBehaviour
             AdjustBonesRecursive(foot, adjustmentAmount);
         }
     }
-
-
-
-    
-
     private bool IsCharacterMoving()
     {
         return _controller.velocity.magnitude > 0.1f; 
+    }
+    [ServerRpc]
+    private void UpdateIKBlendServerRpc(float ikBlend)
+    {
+        _ikBlend = ikBlend;
+        UpdateIKBlendClientRpc(_ikBlend, rpcParams: default);
+    }
+    [ClientRpc]
+    private void UpdateIKBlendClientRpc(float ikBlend, ClientRpcParams rpcParams = default)
+    {
+        _ikBlend = ikBlend;
     }
 }
 
