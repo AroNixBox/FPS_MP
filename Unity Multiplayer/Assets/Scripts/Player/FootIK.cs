@@ -1,9 +1,10 @@
 using System;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Animator), typeof(CharacterController))]
-public class FootIK : MonoBehaviour
+public class FootIK : NetworkBehaviour
 {
     private Animator _animator;
     private CharacterController _controller;
@@ -102,6 +103,7 @@ public class FootIK : MonoBehaviour
 
     private void Update()
     {
+        if (!IsOwner) return;
         if (isJumping) return;
         
         float target = IsCharacterMoving() ? 0f : 1f;

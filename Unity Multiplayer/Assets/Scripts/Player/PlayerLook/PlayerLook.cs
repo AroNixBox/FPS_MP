@@ -58,5 +58,19 @@ public class PlayerLook : NetworkBehaviour
         }
 
         headBone.rotation = playerRotation;
+        UpdateHeadRotationServerRpc(headBone.rotation);
+    }
+    [ServerRpc]
+    private void UpdateHeadRotationServerRpc(Quaternion newRotation)
+    {
+        // Senden Sie die neue Rotation an alle Clients
+        UpdateHeadRotationClientRpc(newRotation);
+    }
+
+    [ClientRpc]
+    private void UpdateHeadRotationClientRpc(Quaternion newRotation)
+    {
+        // Aktualisieren Sie die Rotation des Kopfes auf allen Clients
+        headBone.rotation = newRotation;
     }
 }
