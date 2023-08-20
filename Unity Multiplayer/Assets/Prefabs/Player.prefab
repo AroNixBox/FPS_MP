@@ -1026,12 +1026,12 @@ MonoBehaviour:
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
+  UseQuaternionSynchronization: 1
   UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
+  UseHalfFloatPrecision: 1
   InLocalSpace: 0
   Interpolate: 1
-  SlerpPosition: 0
+  SlerpPosition: 1
 --- !u!95 &3535706385463569493
 Animator:
   serializedVersion: 5
@@ -1072,7 +1072,7 @@ MonoBehaviour:
   rightFootRotationWeight: 1
   leftFootPositionWeight: 1
   leftFootRotationWeight: 1
-  _footOffset: 0.1
+  footOffset: 0.1
   isJumping: 0
   toeAdjustmentSpeed: 5
 --- !u!114 &3561085498328086611

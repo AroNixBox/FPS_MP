@@ -16,7 +16,7 @@ public class FootIK : NetworkBehaviour
     [Range(0, 1)] [SerializeField] private float rightFootRotationWeight = 1;
     [Range(0, 1)] [SerializeField] private float leftFootPositionWeight = 1;
     [Range(0, 1)] [SerializeField] private float leftFootRotationWeight = 1;
-    [Range(0, 0.2f)] [SerializeField] private float _footOffset = 0.1f;
+    [Range(0, 0.2f)] [SerializeField] private float footOffset = 0.1f;
 
     private float _ikBlend = 1f;
     [HideInInspector]
@@ -37,8 +37,7 @@ public class FootIK : NetworkBehaviour
     //Will be called from Animator-Component
     private void OnAnimatorIK(int layerIndex)
     {
-        if (isJumping) return;
-        
+        if (!IsOwner) return;
         float modifiedWeight = 1f;
 
         if (IsCharacterMoving())
@@ -56,7 +55,7 @@ public class FootIK : NetworkBehaviour
         Transform lowerFoot = (_leftFoot.position.y < _rightFoot.position.y) ? _leftFoot : _rightFoot;
         if (Physics.Raycast(lowerFoot.position + Vector3.up, Vector3.down, out RaycastHit hit, 2.5f, groundLayer))
         {
-            float adjustmentAmount = hit.point.y - lowerFoot.position.y + _footOffset;
+            float adjustmentAmount = hit.point.y - lowerFoot.position.y + footOffset;
             AdjustBonesRecursive(lowerFoot, adjustmentAmount);
         }
     }
@@ -76,7 +75,7 @@ public class FootIK : NetworkBehaviour
         Ray ray = new Ray(_animator.GetIKPosition(foot) + Vector3.up * 0.5f, Vector3.down);
         if (Physics.Raycast(ray, out RaycastHit hit, 2.5f, groundLayer))
         {
-            Vector3 footPosition = hit.point + hit.normal * _footOffset;
+            Vector3 footPosition = hit.point + hit.normal * footOffset;
             Quaternion footRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(transform.forward, hit.normal), hit.normal);
             _animator.SetIKPosition(foot, footPosition);
             _animator.SetIKRotation(foot, footRotation);
@@ -84,7 +83,7 @@ public class FootIK : NetworkBehaviour
             _animator.SetIKRotationWeight(foot, rotationWeight * _ikBlend);
 
             Transform toeBone = foot == AvatarIKGoal.LeftFoot ? _leftFoot : _rightFoot;
-            Vector3 targetToePosition = hit.point + hit.normal * _footOffset;
+            Vector3 targetToePosition = hit.point + hit.normal * footOffset;
             toeBone.position = Vector3.Lerp(toeBone.position, targetToePosition, toeAdjustmentSpeed * Time.deltaTime);
 
             float diffY = _animator.GetIKPosition(foot).y - footPosition.y;
@@ -99,12 +98,13 @@ public class FootIK : NetworkBehaviour
             _animator.SetIKRotationWeight(foot, 0);
         }
     }
-    
 
     private void Update()
     {
         if (!IsOwner) return;
-        if (isJumping) return;
+        //if (!_controller.isGrounded) return;
+        
+        Debug.Log("Update");
         
         float target = IsCharacterMoving() ? 0f : 1f;
         _ikBlend = Mathf.Lerp(_ikBlend, target, Time.deltaTime * 2);
@@ -112,8 +112,8 @@ public class FootIK : NetworkBehaviour
     }
     private void LateUpdate()
     {
-        if (isJumping) return;
-        
+        //if (!_controller.isGrounded) return;
+        Debug.Log("LateUpdate");
         AdjustFootToGround(_leftFoot);
         AdjustFootToGround(_rightFoot);
     }
@@ -122,7 +122,7 @@ public class FootIK : NetworkBehaviour
     {
         if (Physics.Raycast(foot.position + Vector3.up, Vector3.down, out RaycastHit hit, 2.5f, groundLayer))
         {
-            float adjustmentAmount = hit.point.y - foot.position.y + _footOffset;
+            float adjustmentAmount = hit.point.y - foot.position.y + footOffset;
             AdjustBonesRecursive(foot, adjustmentAmount);
         }
     }
@@ -131,10 +131,10 @@ public class FootIK : NetworkBehaviour
         return _controller.velocity.magnitude > 0.1f; 
     }
     [ServerRpc]
-    private void UpdateIKBlendServerRpc(float ikBlend)
+    private void UpdateIKBlendServerRpc(float ikBlend, ServerRpcParams rpcParams = default)
     {
         _ikBlend = ikBlend;
-        UpdateIKBlendClientRpc(_ikBlend, rpcParams: default);
+        UpdateIKBlendClientRpc(_ikBlend);
     }
     [ClientRpc]
     private void UpdateIKBlendClientRpc(float ikBlend, ClientRpcParams rpcParams = default)

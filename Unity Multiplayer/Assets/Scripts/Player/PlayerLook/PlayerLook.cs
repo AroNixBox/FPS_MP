@@ -22,8 +22,7 @@ public class PlayerLook : NetworkBehaviour
     private bool _isRotatingCharacter;
     private void Update()
     {
-        if (!IsOwner)
-            return;
+        if (!IsOwner) return;
 
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
@@ -61,10 +60,10 @@ public class PlayerLook : NetworkBehaviour
         UpdateHeadRotationServerRpc(headBone.rotation);
     }
     [ServerRpc]
-    private void UpdateHeadRotationServerRpc(Quaternion newRotation)
+    private void UpdateHeadRotationServerRpc(Quaternion newRotation, ServerRpcParams rpcParams = default)
     {
         // Senden Sie die neue Rotation an alle Clients
-        UpdateHeadRotationClientRpc(newRotation, rpcParams: default);
+        UpdateHeadRotationClientRpc(newRotation);
     }
 
     [ClientRpc]

@@ -11,7 +11,7 @@ public class PlayerLocomotion : NetworkBehaviour
     [SerializeField] private float speed;
     private float _accelerationFactor = 2f;
     private float _currentSpeed;
-    private float gravity = 9.81f;
+    private const float gravity = 9.81f;
 
     private Animator _animator;
     private CharacterController _characterController;
@@ -42,7 +42,8 @@ public class PlayerLocomotion : NetworkBehaviour
 
     void Update()
     {
-        if (!IsOwner) return;       
+        //Maybe put this on top
+        if (!IsOwner) return;
         if (!_characterController.isGrounded)
         {
             _characterController.Move(Vector3.down * gravity * Time.deltaTime);
@@ -95,12 +96,12 @@ public class PlayerLocomotion : NetworkBehaviour
         SpawnObjectClientRpc();
     }
     [ClientRpc]
-    private void SpawnObjectClientRpc(ClientRpcParams serverRpcParams = default)
+    private void SpawnObjectClientRpc(ClientRpcParams clientRpcParams = default)
     {
         _spawnedObjectTransform = Instantiate(spawnedObjectPrefab);
         _spawnedObjectTransform.GetComponent<NetworkObject>().Spawn(true);
     }
-    
+
     public override void OnNetworkSpawn()
     {
         _randomNumber.OnValueChanged += (MyCustomData previousValue, MyCustomData newValue) =>
