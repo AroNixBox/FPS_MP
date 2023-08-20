@@ -1221,5 +1221,5 @@ MonoBehaviour:
   mouseSensitivity: 100
   headBone: {fileID: 120655326586434809}
   characterTransform: {fileID: 5963443266043339736}
-  bodyFollowThreshold: 45
+  bodyFollowThreshold: 90
   rotationSpeed: 5
