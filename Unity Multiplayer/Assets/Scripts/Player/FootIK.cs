@@ -103,9 +103,7 @@ public class FootIK : NetworkBehaviour
     {
         if (!IsOwner) return;
         //if (!_controller.isGrounded) return;
-        
-        Debug.Log("Update");
-        
+
         float target = IsCharacterMoving() ? 0f : 1f;
         _ikBlend = Mathf.Lerp(_ikBlend, target, Time.deltaTime * 2);
         UpdateIKBlendServerRpc(_ikBlend);
@@ -113,7 +111,7 @@ public class FootIK : NetworkBehaviour
     private void LateUpdate()
     {
         //if (!_controller.isGrounded) return;
-        Debug.Log("LateUpdate");
+
         AdjustFootToGround(_leftFoot);
         AdjustFootToGround(_rightFoot);
     }
