@@ -35,7 +35,7 @@ public class LobbyManager : MonoBehaviour
     }
 
 
-    private async void Start()
+    /*private async void Start()
     {
         //Wait for Connection
         await UnityServices.InitializeAsync();
@@ -51,7 +51,7 @@ public class LobbyManager : MonoBehaviour
         //Giving the Player a Test-Name
         _playerName = "Tester" + UnityEngine.Random.Range(10, 999);
         Debug.Log(_playerName);
-    }
+    }*/
 
     private void Update()
     {
@@ -68,11 +68,13 @@ public class LobbyManager : MonoBehaviour
         initializationOptions.SetProfile(playerName);
 
         await UnityServices.InitializeAsync(initializationOptions);
-        
         AuthenticationService.Instance.SignedIn += () =>
         {
-            Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId);
+            Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId + " " + GetPlayer().Data["PlayerName"].Value);
         };
+        await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        
+        //Handle RemoveInput/Auth Window
     }
     //Prevent Lobby from being closed after 30 Seconds, Sends Heartbeat to Server
     private async void HandleLobbyHeartbeat()
