@@ -55,11 +55,9 @@ public class NetworkManagerUI : MonoBehaviour
     {
         string playerName = playerNameAuthenticate.text;
         playerName = RemoveSpecialCharacters(playerName);
-
-        Debug.Log("calle111d");
+        
         if (IsAlphabetic(playerName) && playerName.Length >= 3)
         {
-            Debug.Log("called");
             LobbyManager.Instance.Authenticate(playerName);
             Debug.Log(playerName);
         }

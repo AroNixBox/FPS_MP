@@ -211,7 +211,7 @@ public class LobbyManager : MonoBehaviour
         }
     }
 
-    public async void RefreshLobbyList()
+    private async void RefreshLobbyList()
     {
         try
         {
