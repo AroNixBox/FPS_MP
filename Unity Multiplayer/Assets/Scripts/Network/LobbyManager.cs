@@ -325,16 +325,19 @@ public class LobbyManager : MonoBehaviour
     }
     public async void LeaveLobby()
     {
+        //>>>>>>>>>>>>>>Set After, if causes issues remove<<<<<<<<<
         if (_joinedLobby == null)
-        {
-            Debug.Log("Not in any Lobby");
             return;
-        }
+        
         try
         {
             JoinedOrLeft currentState = JoinedOrLeft.Left;
             NetworkManagerUI.Instance.UpdateJoinedOrLeft(currentState);
             await LobbyService.Instance.RemovePlayerAsync(_joinedLobby.Id, AuthenticationService.Instance.PlayerId);
+            PrintJoinedLobby();
+            //>>>>>>>>>>>>>>Set After, if causes issues remove<<<<<<<<<
+            if (_hostLobby != null)
+                _hostLobby = null;
             _joinedLobby = null;
         }
         catch (LobbyServiceException e)
