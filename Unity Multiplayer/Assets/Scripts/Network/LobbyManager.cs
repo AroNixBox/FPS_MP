@@ -6,6 +6,7 @@ using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using UnityEngine;
 using Unity.Services.Lobbies.Models;
+using Unity.VisualScripting;
 
 public enum JoinedOrLeft
 {
@@ -66,8 +67,6 @@ public class LobbyManager : MonoBehaviour
             Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId + " " + GetPlayer().Data["PlayerName"].Value);
         };
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        
-        //Handle RemoveInput/Auth Window
     }
     //Prevent Lobby from being closed after 30 Seconds, Sends Heartbeat to Server
     private async void HandleLobbyHeartbeat()
@@ -101,6 +100,16 @@ public class LobbyManager : MonoBehaviour
 
                 Lobby lobby = await LobbyService.Instance.GetLobbyAsync(_joinedLobby.Id);
                 _joinedLobby = lobby;
+
+                if (_joinedLobby.Data["StartGame"].Value != "0")
+                {
+                    if (!IsLobbyHost())
+                    {
+                        RelayServer.Instance.JoinRelay(_joinedLobby.Data["StartGame"].Value);
+                    }
+                   
+                }
+
             }
         }
     }
@@ -127,7 +136,8 @@ public class LobbyManager : MonoBehaviour
                     //This simply creates a Lobby as CaptureTheFlag
                     //VisibilityOptions.Public means readable for everyone, even if not joined to the Lobby. .Member means only readable for joined players.
                     {"GameMode", new DataObject(DataObject.VisibilityOptions.Public, "CaptureTheFlag")},
-                    {"Map", new DataObject(DataObject.VisibilityOptions.Public, "DustyMountains")}
+                    {"Map", new DataObject(DataObject.VisibilityOptions.Public, "DustyMountains")},
+                    {"StartGame", new DataObject(DataObject.VisibilityOptions.Member, "0")}
                 }
             };
             
@@ -150,8 +160,10 @@ public class LobbyManager : MonoBehaviour
         }
         
     }
-    
-
+    private bool IsLobbyHost()
+    {
+        return _hostLobby != null;
+    }
     //Autorefresh every 5 Seconds
     private void HandleRefreshLobbyList()
     {
@@ -350,6 +362,34 @@ public class LobbyManager : MonoBehaviour
             
         }
     }
+    //Make this a button for the Host only
+    public async void StartGame()
+    {
+        if (IsLobbyHost())
+        {
+            try
+            {
+                Debug.Log("Start Game");
+                string relayCode = await RelayServer.Instance.CreateRelay();
+
+                Lobby lobby = await Lobbies.Instance.UpdateLobbyAsync(_joinedLobby.Id, new UpdateLobbyOptions
+                {
+                    Data = new Dictionary<string, DataObject>
+                    {
+                        {"StartGame", new DataObject(DataObject.VisibilityOptions.Member, relayCode)}
+                    }
+                });
+                _joinedLobby = lobby;
+                NetworkManagerUI.Instance.SetupGame();
+            }
+            catch (LobbyServiceException e)
+            {
+                Debug.Log(e);
+            }
+
+        }
+
+    }
     public async void LeaveLobby()
     {
         //>>>>>>>>>>>>>>Set After, if causes issues remove<<<<<<<<<
@@ -373,11 +413,6 @@ public class LobbyManager : MonoBehaviour
             Debug.Log(e);
         }
 
-    }
-
-    private void OnApplicationQuit()
-    {
-        LeaveLobby();
     }
 
     public async void JoinLobbyByCode(string lobbyCode)
