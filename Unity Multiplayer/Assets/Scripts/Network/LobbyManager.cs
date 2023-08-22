@@ -106,8 +106,10 @@ public class LobbyManager : MonoBehaviour
                     if (!IsLobbyHost())
                     {
                         RelayServer.Instance.JoinRelay(_joinedLobby.Data["StartGame"].Value);
+                        NetworkManagerUI.Instance.SetupGame();
                     }
-                   
+
+                    _joinedLobby = null;
                 }
 
             }

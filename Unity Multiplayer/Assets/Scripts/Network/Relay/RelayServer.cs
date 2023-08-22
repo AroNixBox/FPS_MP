@@ -55,6 +55,8 @@ public class RelayServer : MonoBehaviour
            
            RelayServerData relayServerData = new RelayServerData(joinAllocation, "dtls");
            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+
+           NetworkManager.Singleton.StartClient();
        }
        catch (RelayServiceException e)
        {    
