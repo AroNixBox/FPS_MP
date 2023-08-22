@@ -1,16 +1,24 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.Netcode;
+using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class NetworkManagerUI : MonoBehaviour
 {
+    public static NetworkManagerUI Instance;
+    [Header("Windows")]
     [SerializeField] private GameObject authentificationWindow;
     [SerializeField] private GameObject lobbyWindow;
-
+    [SerializeField] private GameObject joinedLobbyWindow;
     
+    [Header("Lobbies")]
+    [SerializeField] private Transform contentPanel;
+    [SerializeField] private GameObject lobbyButtonPrefab;
+
     [Header("Buttons")]
     [SerializeField] private Button serverButton;
     [SerializeField] private Button hostButton;
@@ -18,11 +26,22 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button createLobbyButton;
     [SerializeField] private Button quickJoinButton;
     [SerializeField] private Button leaveLobbyButton;
+    [SerializeField] private Button printWhoJoinedLobbyButton;
     [SerializeField] private Button authenticateButton;
     [SerializeField] private TextMeshProUGUI playerNameAuthenticate;
 
     private void Awake()
     {
+        if (Instance == null) 
+        { 
+            Instance = this; 
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this) 
+        { 
+            Destroy(gameObject);
+        }
+        
         serverButton.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.StartServer();
@@ -47,8 +66,13 @@ public class NetworkManagerUI : MonoBehaviour
         {
             LobbyManager.Instance.LeaveLobby();
         });
+        printWhoJoinedLobbyButton.onClick.AddListener(() =>
+        {
+            LobbyManager.Instance.PrintJoinedLobby();
+        });
         
         authenticateButton.onClick.AddListener(SendPlayerNameToLobby);
+
     }
 
     private void SendPlayerNameToLobby()
@@ -83,6 +107,37 @@ public class NetworkManagerUI : MonoBehaviour
     private string RemoveSpecialCharacters(string value)
     {
         return new string(value.Where(c => char.IsLetter(c) || char.IsWhiteSpace(c)).ToArray());
+    }
+    
+    public void PrepareForLobbyUIRefresh()
+    {
+        // Entfernen Sie alle aktuellen Lobby-UI-Elemente, bevor Sie neue hinzufügen
+        foreach (Transform child in contentPanel)
+        {
+            Destroy(child.gameObject);
+        }
+    }
+    
+    public void RefreshLobbiesUI(Lobby lobby)
+    {
+        GameObject newButton = Instantiate(lobbyButtonPrefab, contentPanel);
+        SingleLobbyUI lobbyButton = newButton.GetComponent<SingleLobbyUI>();
+        lobbyButton.Setup(lobby);
+    }
+
+    public void UpdateJoinedOrLeft(JoinedOrLeft state)
+    {
+        switch (state)
+        {
+            case JoinedOrLeft.Joined:
+                joinedLobbyWindow.SetActive(true);
+                lobbyWindow.SetActive(false);
+                break;
+            case JoinedOrLeft.Left:
+                joinedLobbyWindow.SetActive(false);
+                lobbyWindow.SetActive(true);
+                break;
+        }
     }
 
 }

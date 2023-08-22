@@ -6,7 +6,11 @@ using Unity.Services.Lobbies;
 using UnityEngine;
 using Unity.Services.Lobbies.Models;
 
-
+public enum JoinedOrLeft
+{
+    Joined,
+    Left
+}
 public class LobbyManager : MonoBehaviour
 {
     private Lobby _hostLobby;
@@ -14,10 +18,12 @@ public class LobbyManager : MonoBehaviour
     private float _heartbeatTimer;
     private float _lobbyUpdateTimer;
     private float _refreshLobbyListTimer;
-    //The Name of the Player, should be festgelegt by player at its own later on
     private string _playerName;
+    //Has the player joined or left the player?
     
-    //Events
+    
+    //Saves all current lobbies to not destroy UI Every 5 Seconds, but only when changed.
+    private Dictionary<string, Lobby> currentLobbies = new Dictionary<string, Lobby>();
 
     public static LobbyManager Instance;
 
@@ -93,6 +99,7 @@ public class LobbyManager : MonoBehaviour
         }
     }
     //Updates the Lobby each 1.1 Seconds to make sure if Gamemode/ Map is changed, this will be sent to the Server!
+    //Also Handling to notice when leaving a lobby
     private async void HandleLobbyPollForUpdates()
     {
         //Can be called once per second
@@ -147,6 +154,8 @@ public class LobbyManager : MonoBehaviour
             
             PrintPlayers(_hostLobby);
             Debug.Log("Created Lobby: " + lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Id + " " + lobby.LobbyCode);
+            JoinedOrLeft currentState = JoinedOrLeft.Joined;
+            NetworkManagerUI.Instance.UpdateJoinedOrLeft(currentState);
         }
         catch (LobbyServiceException e)
         {
@@ -154,46 +163,7 @@ public class LobbyManager : MonoBehaviour
         }
         
     }
-
-    /*public async void ListLobbies()
-    {
-        //These Filters created, but would need to be activated via button
-        try
-        { 
-            QueryLobbiesOptions queryLobbiesOptions = new QueryLobbiesOptions
-            {
-                //maximum Lobbies shown in List
-                Count = 25,
-                Filters = new List<QueryFilter>
-                {
-                    //Lobbys available slots must be GT(Greater than) "0".
-                    new QueryFilter(QueryFilter.FieldOptions.AvailableSlots, "0", QueryFilter.OpOptions.GT),
-                    //Overwriting the free S1 Filter, Calling it CaputeTheFlag and giving it equals. If Player wants to Find CaptureTheFlag, He searched for s1 and gets all s1 Lobbies Shown.
-                    //This Filter will Try to find each GameMode "CaptureTheFlag", that is public
-                    //>>new Querilter(QueryFilter.FieldOptions.S1, "CaptureTheFlag", QueryFilter.OpOptions.EQ)<<
-                },
-                Order = new List<QueryOrder>
-                {
-                    //Sort in Ascending/ Descending Order, Only search for created Lobbies
-                    new QueryOrder(false, QueryOrder.FieldOptions.Created)
-                }
-            };
-            // This Seeks all lobbies lobby. In the () are the rules that that are applied when searching. Could put GameMode FIlter in Here, Make it Adjustable with Buttons
-            QueryResponse queryResponse = await Lobbies.Instance.QueryLobbiesAsync(queryLobbiesOptions);
-        
-            Debug.Log("Lobbies found: " + queryResponse.Results.Count);
-            foreach (Lobby lobby in queryResponse.Results)
-            {
-                //Show the Lobbies Name, its assigned MaxPlayers and the GameMode
-                Debug.Log(lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Data["GameMode"].Value);
-            }
-            
-        }
-        catch (LobbyServiceException e)
-        {
-            Debug.Log(e);
-        }
-    }*/
+    
 
     //Autorefresh every 5 Seconds
     private void HandleRefreshLobbyList()
@@ -211,33 +181,54 @@ public class LobbyManager : MonoBehaviour
         }
     }
 
+    //If want to refresh Lobby by Button instead of refreshing every 5 Seconds, Isolate this function, dont call it above. Remove from Update and Link it to a button.
     private async void RefreshLobbyList()
     {
         try
         {
-            QueryLobbiesOptions options = new QueryLobbiesOptions();
-            options.Count = 25;
+            QueryLobbiesOptions options = new QueryLobbiesOptions
+            {
+                Count = 25,
+                //Filter for open lobbies only
+                Filters = new List<QueryFilter>
+                {
+                    new QueryFilter(field: QueryFilter.FieldOptions.AvailableSlots,
+                        op: QueryFilter.OpOptions.GT, value: "0")
+                },
+                Order = new List<QueryOrder>
+                {
+                    new QueryOrder(
+                        asc: false,
+                        field: QueryOrder.FieldOptions.Created)
+                }
+            };
 
-            //Filter for open lobbies only
-            options.Filters = new List<QueryFilter>
-            {
-                new QueryFilter(field: QueryFilter.FieldOptions.AvailableSlots,
-                    op: QueryFilter.OpOptions.GT, value: "0")
-            };
-            options.Order = new List<QueryOrder>
-            {
-                new QueryOrder(
-                    asc: false,
-                    field: QueryOrder.FieldOptions.Created)
-            };
-            QueryResponse lobbyListQueryResponse = await Lobbies.Instance.QueryLobbiesAsync();
+            QueryResponse lobbyListQueryResponse = await Lobbies.Instance.QueryLobbiesAsync(options);
             
+            List<Lobby> fetchedLobbies = lobbyListQueryResponse.Results;
+            
+            if (HasLobbyListChanged(fetchedLobbies))
+            {
+                Debug.Log("New Lobbies found: " + lobbyListQueryResponse.Results.Count);
+                currentLobbies.Clear();
+
+                NetworkManagerUI.Instance.PrepareForLobbyUIRefresh();
+                foreach (Lobby lobby in fetchedLobbies)
+                {
+
+                    currentLobbies.Add(lobby.Id, lobby);
+                    Debug.Log(lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Data["GameMode"].Value);
+                    // Update UI
+                    NetworkManagerUI.Instance.RefreshLobbiesUI(lobby);
+                }
+            }
             Debug.Log("Lobbies found: " + lobbyListQueryResponse.Results.Count);
             foreach (Lobby lobby in lobbyListQueryResponse.Results)
             {
                 //Show the Lobbies Name, its assigned MaxPlayers and the GameMode
                 Debug.Log(lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Data["GameMode"].Value);
             }
+            
             //OnLobbyList
         }
         catch (LobbyServiceException e)
@@ -246,22 +237,38 @@ public class LobbyManager : MonoBehaviour
             throw;
         }
     }
+    private bool HasLobbyListChanged(List<Lobby> newLobbies)
+    {
+        if (newLobbies.Count != currentLobbies.Count) return true;
 
-    public async void JoinLobbyByCode(string lobbyCode)
+        foreach (Lobby lobby in newLobbies)
+        {
+            if (!currentLobbies.ContainsKey(lobby.Id))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public async void JoinLobbyByClick(string lobbyID)
     {
         try
         {
-            JoinLobbyByCodeOptions joinLobbyByCodeOptions = new JoinLobbyByCodeOptions
+            JoinLobbyByIdOptions joinLobbyByIdOptions = new JoinLobbyByIdOptions()
             {
                 Player = GetPlayer()
             };
-            
+
             //Tries to find the Lobby with the correct code, Code will be Set in the Lobbycreation if createLobbyOptions bool value is changed to true and set in the parameters
-            Lobby lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, joinLobbyByCodeOptions);
+            Lobby lobby = await Lobbies.Instance.JoinLobbyByIdAsync(lobbyID, joinLobbyByIdOptions);
             _joinedLobby = lobby;
-            Debug.Log("Joined Lobby with Code: " + lobbyCode);
+            Debug.Log("Click-Joined Lobby with ID: " + lobbyID);
 
             PrintPlayers(lobby);
+            JoinedOrLeft currentState = JoinedOrLeft.Joined;
+            NetworkManagerUI.Instance.UpdateJoinedOrLeft(currentState);
         }
         catch (LobbyServiceException e)
         {
@@ -283,6 +290,8 @@ public class LobbyManager : MonoBehaviour
             Lobby lobby = await LobbyService.Instance.QuickJoinLobbyAsync(quickJoinLobbyOptions);
             _joinedLobby = lobby;
             PrintPlayers(lobby);
+            JoinedOrLeft currentState = JoinedOrLeft.Joined;
+            NetworkManagerUI.Instance.UpdateJoinedOrLeft(currentState);
         }
         catch (LobbyServiceException e)
         {
@@ -314,7 +323,52 @@ public class LobbyManager : MonoBehaviour
             
         }
     }
+    public async void LeaveLobby()
+    {
+        if (_joinedLobby == null)
+        {
+            Debug.Log("Not in any Lobby");
+            return;
+        }
+        try
+        {
+            JoinedOrLeft currentState = JoinedOrLeft.Left;
+            NetworkManagerUI.Instance.UpdateJoinedOrLeft(currentState);
+            await LobbyService.Instance.RemovePlayerAsync(_joinedLobby.Id, AuthenticationService.Instance.PlayerId);
+            _joinedLobby = null;
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
+        }
 
+    }
+
+    
+    public async void JoinLobbyByCode(string lobbyCode)
+    {
+        try
+        {
+            JoinLobbyByCodeOptions joinLobbyByCodeOptions = new JoinLobbyByCodeOptions
+            {
+                Player = GetPlayer()
+            };
+            
+            //Tries to find the Lobby with the correct code, Code will be Set in the Lobbycreation if createLobbyOptions bool value is changed to true and set in the parameters
+            Lobby lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, joinLobbyByCodeOptions);
+            _joinedLobby = lobby;
+            Debug.Log("Joined Lobby with Code: " + lobbyCode);
+         
+            PrintPlayers(lobby);
+            JoinedOrLeft currentState = JoinedOrLeft.Joined;
+            NetworkManagerUI.Instance.UpdateJoinedOrLeft(currentState);
+        }
+        catch (LobbyServiceException e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
     public void PrintJoinedLobby()
     {
         PrintPlayers(_joinedLobby);
@@ -385,18 +439,7 @@ public class LobbyManager : MonoBehaviour
 
     }
 
-    public async void LeaveLobby()
-    {
-        try
-        {
-            await LobbyService.Instance.RemovePlayerAsync(_joinedLobby.Id, AuthenticationService.Instance.PlayerId);
-        }
-        catch (LobbyServiceException e)
-        {
-            Debug.Log(e);
-        }
 
-    }
 
     private async void KickPlayer()
     {
@@ -405,6 +448,7 @@ public class LobbyManager : MonoBehaviour
         try
         {
             await LobbyService.Instance.RemovePlayerAsync(_joinedLobby.Id, _joinedLobby.Players[1].Id);
+            //Would need to handle the Updated window for the Player that gets kicked. So Joinedlobbywindow would need to get disabled.
         }
         catch (LobbyServiceException e)
         {
