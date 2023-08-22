@@ -1399,67 +1399,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1167330622702576743, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1394787510905599524, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: playerNamePrefab
-      value: 
-      objectReference: {fileID: 185100981553763486, guid: 43dce42907347e642b6c6670dfdceda4,
-        type: 3}
-    - target: {fileID: 1394787510905599524, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: playersJoinedLobbyContentParent
-      value: 
-      objectReference: {fileID: 5296682358943100122}
-    - target: {fileID: 2771492370764769646, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2771492370764769646, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2771492370764769646, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: -17
-      objectReference: {fileID: 0}
-    - target: {fileID: 3938562953823307310, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3938562953823307310, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3938562953823307310, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3966452113202338942, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: -1903
-      objectReference: {fileID: 0}
-    - target: {fileID: 3966452113202338942, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: -1080
-      objectReference: {fileID: 0}
-    - target: {fileID: 3966452113202338942, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5296682359184637331, guid: 1386f410dc3ebb94882fab2b366b57ca,
         type: 3}
       propertyPath: m_Pivot.x
@@ -1570,24 +1509,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkCanvas
       objectReference: {fileID: 0}
-    - target: {fileID: 5514970705472276415, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_Name
-      value: JoinedLobbyContent
-      objectReference: {fileID: 0}
-    - target: {fileID: 8244887699356731951, guid: 1386f410dc3ebb94882fab2b366b57ca,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1386f410dc3ebb94882fab2b366b57ca, type: 3}
---- !u!224 &5296682358943100122 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 3966452113202338942, guid: 1386f410dc3ebb94882fab2b366b57ca,
-    type: 3}
-  m_PrefabInstance: {fileID: 5296682358943100121}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8618534058683425207
 PrefabInstance:
   m_ObjectHideFlags: 0
