@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
@@ -16,6 +17,7 @@ public class LobbyManager : MonoBehaviour
     private Lobby _hostLobby;
     private Lobby _joinedLobby;
     private float _heartbeatTimer;
+    private float _lobbyJoinedUpdateTimer;
     private float _lobbyUpdateTimer;
     private float _refreshLobbyListTimer;
     private string _playerName;
@@ -24,6 +26,10 @@ public class LobbyManager : MonoBehaviour
     
     //Saves all current lobbies to not destroy UI Every 5 Seconds, but only when changed.
     private Dictionary<string, Lobby> currentLobbies = new Dictionary<string, Lobby>();
+    
+    //Saves all current Players to not destroy every player each 5 seconds, but rather only when changed
+    private List<string> previousPlayerIds = new List<string>();
+
 
     public static LobbyManager Instance;
 
@@ -39,32 +45,13 @@ public class LobbyManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-
-
-    /*private async void Start()
-    {
-        //Wait for Connection
-        await UnityServices.InitializeAsync();
-
-        AuthenticationService.Instance.SignedIn += () =>
-        {
-            //When Signed in, give connection, show playerID
-            Debug.Log("Signed in " + AuthenticationService.Instance.PlayerId);
-        };
-        //Instead of PlayerLogin => Will connect anonymously
-        await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        
-        //Giving the Player a Test-Name
-        _playerName = "Tester" + UnityEngine.Random.Range(10, 999);
-        Debug.Log(_playerName);
-    }*/
-
     private void Update()
     {
         //Prevent Lobby from being closed after 30 Seconds, Sends Heartbeat to Server
         HandleLobbyHeartbeat();
         HandleLobbyPollForUpdates();
         HandleRefreshLobbyList();
+        HandleNamesListInLobby();
     }
     //Use this one for Button AUthentification
     public async void Authenticate(string playerName)
@@ -168,6 +155,9 @@ public class LobbyManager : MonoBehaviour
     //Autorefresh every 5 Seconds
     private void HandleRefreshLobbyList()
     {
+        if (_joinedLobby != null)
+            return;
+        
         if (UnityServices.State == ServicesInitializationState.Initialized && AuthenticationService.Instance.IsSignedIn)
         {
             _refreshLobbyListTimer -= Time.deltaTime;
@@ -180,6 +170,7 @@ public class LobbyManager : MonoBehaviour
             }
         }
     }
+    
 
     //If want to refresh Lobby by Button instead of refreshing every 5 Seconds, Isolate this function, dont call it above. Remove from Update and Link it to a button.
     private async void RefreshLobbyList()
@@ -251,7 +242,43 @@ public class LobbyManager : MonoBehaviour
 
         return false;
     }
+    private void HandleNamesListInLobby()
+    {
+        if (_joinedLobby == null)
+            return;
+        
+        _lobbyJoinedUpdateTimer -= Time.deltaTime;
+        if (_lobbyJoinedUpdateTimer < 0f)
+        {
+            float lobbyJoinedUpdateTimerMax = 5f;
+            _lobbyJoinedUpdateTimer = lobbyJoinedUpdateTimerMax;
+            if (HasPlayerListChanged(_joinedLobby.Players))
+            {
+                NetworkManagerUI.Instance.UpdatePlayerNamesInLobby(_joinedLobby.Players);
+                previousPlayerIds = _joinedLobby.Players.Select(p => p.Id).ToList();
+            }
+        }
+    }
+    bool HasPlayerListChanged(List<Player> currentlyJoinedPlayers)
+    {
+        List<string> currentPlayerIds = currentlyJoinedPlayers.Select(p => p.Id).ToList();
+        
+        if (currentPlayerIds.Count != previousPlayerIds.Count)
+        {
+            return true;
+        }
 
+        for (int i = 0; i < currentPlayerIds.Count; i++)
+        {
+            if (currentPlayerIds[i] != previousPlayerIds[i])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
     public async void JoinLobbyByClick(string lobbyID)
     {
         try
@@ -338,6 +365,7 @@ public class LobbyManager : MonoBehaviour
             //>>>>>>>>>>>>>>Set After, if causes issues remove<<<<<<<<<
             if (_hostLobby != null)
                 _hostLobby = null;
+            
             _joinedLobby = null;
         }
         catch (LobbyServiceException e)
@@ -347,7 +375,11 @@ public class LobbyManager : MonoBehaviour
 
     }
 
-    
+    private void OnApplicationQuit()
+    {
+        LeaveLobby();
+    }
+
     public async void JoinLobbyByCode(string lobbyCode)
     {
         try

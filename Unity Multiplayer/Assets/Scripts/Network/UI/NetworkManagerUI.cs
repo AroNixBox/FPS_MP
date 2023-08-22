@@ -18,6 +18,11 @@ public class NetworkManagerUI : MonoBehaviour
     [Header("Lobbies")]
     [SerializeField] private Transform contentPanel;
     [SerializeField] private GameObject lobbyButtonPrefab;
+    
+    [Header("JoinedLobby")]
+    [SerializeField] private TextMeshProUGUI playerNamePrefab;
+    [SerializeField] private Transform playersJoinedLobbyContentParent;
+    [SerializeField] private List<TextMeshProUGUI> currentDisplayedNames = new List<TextMeshProUGUI>();
 
     [Header("Buttons")]
     [SerializeField] private Button serverButton;
@@ -26,7 +31,6 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button createLobbyButton;
     [SerializeField] private Button quickJoinButton;
     [SerializeField] private Button leaveLobbyButton;
-    [SerializeField] private Button printWhoJoinedLobbyButton;
     [SerializeField] private Button authenticateButton;
     [SerializeField] private TextMeshProUGUI playerNameAuthenticate;
 
@@ -66,11 +70,7 @@ public class NetworkManagerUI : MonoBehaviour
         {
             LobbyManager.Instance.LeaveLobby();
         });
-        printWhoJoinedLobbyButton.onClick.AddListener(() =>
-        {
-            LobbyManager.Instance.PrintJoinedLobby();
-        });
-        
+
         authenticateButton.onClick.AddListener(SendPlayerNameToLobby);
 
     }
@@ -139,5 +139,22 @@ public class NetworkManagerUI : MonoBehaviour
                 break;
         }
     }
+    
+    public void UpdatePlayerNamesInLobby(List<Player> players)
+    {
+        //Destroy all recent names
+        foreach (var textObj in currentDisplayedNames)
+        {
+            Destroy(textObj.gameObject);
+        }
+        currentDisplayedNames.Clear();
 
+        //Create new tmp for each new joined player
+        foreach (var player in players)
+        {
+            var joinedPlayerName = Instantiate(playerNamePrefab, playersJoinedLobbyContentParent);
+            joinedPlayerName.text = player.Data["PlayerName"].Value;
+            currentDisplayedNames.Add(joinedPlayerName);
+        }
+    }
 }
