@@ -32,6 +32,7 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button quickJoinButton;
     [SerializeField] private Button leaveLobbyButton;
     [SerializeField] private Button authenticateButton;
+    [SerializeField] private Button startGameButton;
     [SerializeField] private TextMeshProUGUI playerNameAuthenticate;
 
     private void Awake()
@@ -69,6 +70,10 @@ public class NetworkManagerUI : MonoBehaviour
         leaveLobbyButton.onClick.AddListener(() =>
         {
             LobbyManager.Instance.LeaveLobby();
+        });
+        startGameButton.onClick.AddListener(() =>
+        {
+            LobbyManager.Instance.StartGame();
         });
 
         authenticateButton.onClick.AddListener(SendPlayerNameToLobby);
@@ -156,5 +161,11 @@ public class NetworkManagerUI : MonoBehaviour
             joinedPlayerName.text = player.Data["PlayerName"].Value;
             currentDisplayedNames.Add(joinedPlayerName);
         }
+    }
+
+    public void SetupGame()
+    {
+        joinedLobbyWindow.SetActive(false);
+        lobbyWindow.SetActive(false);
     }
 }
