@@ -29,7 +29,7 @@ public class RelayServer : MonoBehaviour
        //Max Players + Host (3 Means 3 Players + Host = 4)
        try
        {
-           Allocation allocation = await RelayService.Instance.CreateAllocationAsync(maxConnections);
+           Allocation allocation = await RelayService.Instance.CreateAllocationAsync(3);
            string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
            Debug.Log(joinCode);
 
