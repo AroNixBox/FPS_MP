@@ -52,23 +52,8 @@ public class PlayerLocomotion : NetworkBehaviour
         if (Input.GetKeyDown(KeyCode.T))
         {
             RequestSpawnObjectServerRpc();
-            
-            //TestClientRpc(new ClientRpcParams{ Send = new ClientRpcSendParams { TargetClientIds = new List<ulong>{ 1 } } });
-            //TestServerRpc(new ServerRpcParams());
-
-            // _randomNumber.Value = new MyCustomData
-            // {
-            //     INT = 10,a
-            //     Bool = false,
-            //     Message = "All your base are belong to us!"
-            // };
         }
 
-        if (Input.GetKeyDown(KeyCode.Y))
-        {
-            //Doesnt work yet
-            Destroy(spawnedObjectPrefab.gameObject);
-        }
         
         //Movement
         Vector3 moveDir = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
