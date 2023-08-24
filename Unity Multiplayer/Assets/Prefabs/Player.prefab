@@ -979,6 +979,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d3669010dd3adb429770a3d86feccd9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  groundCheckDistance: 0.2
+  groundCheckOffset: {x: 0, y: 0.01, z: 0}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
   speed: 5
   _camera: {fileID: 7097266436711962755}
   vcam: {fileID: 4051079142454248512}

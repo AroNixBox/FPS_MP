@@ -4,33 +4,53 @@ using Cinemachine;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 public class PlayerLocomotion : NetworkBehaviour
 {
-    [SerializeField] private float speed;
+    [Header("Ground Check")]
+    [SerializeField] private float groundCheckDistance = 0.2f;
+    [SerializeField] private Vector3 groundCheckOffset = new Vector3(0, -1, 0);
+    [SerializeField] private LayerMask groundLayer;
+    
+    [FormerlySerializedAs("speed")]
+    [Header("Locomotion")]
+    [SerializeField] private float maxSpeed;
     private float _accelerationFactor = 2f;
     private float _currentSpeed;
-    private const float gravity = 9.81f;
 
+    [Header("Jumping")]
+    [SerializeField] private float jumpForce = 7f;
+    [SerializeField] private float additionalGravity = 8f;
+    private float _fallSpeed;
+    private const float GravityForce = 20f;
+    private const float IncreasedGravityAfter = 1.5f;
+    private bool _wasGroundedLastFrame;
+    private float _notGroundedTimer;
+
+
+    [Header("References")]
     private Animator _animator;
     private CharacterController _characterController;
     [SerializeField] private GameObject _camera;
+    [SerializeField] private CinemachineVirtualCamera vcam;
+    private FootIK _footIK;
 
-    [SerializeField]
-    private CinemachineVirtualCamera vcam;
-
-    //Pooling Later on
+    //Not needed
     [SerializeField] private Transform spawnedObjectPrefab;
     private Transform _spawnedObjectTransform;
     
     private NetworkVariable<MyCustomData> _randomNumber = new NetworkVariable<MyCustomData>(new MyCustomData{ INT = 56, Bool = true}, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    
+    private static readonly int Speed = Animator.StringToHash("Speed");
+    private static readonly int AnimJump = Animator.StringToHash("Jump");
+
 
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
         _animator = GetComponent<Animator>();
+        _footIK = GetComponent<FootIK>();
     }
 
     private void Start()
@@ -42,40 +62,95 @@ public class PlayerLocomotion : NetworkBehaviour
 
     void Update()
     {
-        //Maybe put this on top
         if (!IsOwner) return;
-        if (!_characterController.isGrounded)
-        {
-            _characterController.Move(Vector3.down * gravity * Time.deltaTime);
-        }
+        Move();
+        Jump();
+        HandleGravity();
+    }
 
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            RequestSpawnObjectServerRpc();
-        }
 
+    private void Move()
+    {
+        Vector3 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
+
+        moveDirection = _camera.transform.TransformDirection(moveDirection);
+        moveDirection.y = 0;
+
+        //If were moving, Lerp our speed up to maxspeed with accFactor per sec, else Lerp our speed down to 0 by that same accFactor.
+        _currentSpeed = moveDirection.magnitude > 0.1f
+            ? Mathf.Lerp(_currentSpeed, maxSpeed, Time.deltaTime * _accelerationFactor)
+            : Mathf.Lerp(_currentSpeed, 0, Time.deltaTime * _accelerationFactor);
+
+        _characterController.Move(moveDirection.normalized * (_currentSpeed * Time.deltaTime));
+
+        _animator.SetFloat(Speed, _currentSpeed);
+    }
+
+    private void Jump()
+    {
+        if (IsPlayerGrounded() && Input.GetButtonDown("Jump"))
+        {
+            _animator.SetBool(AnimJump, true);
+            //MoveVertically Method automatically handles the Jump if _fallSpeed is increased here
+            _fallSpeed = jumpForce;
+            //_animator.SetBool(AnimJump,  true);
+            if (_footIK.enabled)
+                _footIK.enabled = false;
+        }
         
-        //Movement
-        Vector3 moveDir = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
+    }
+    private bool IsPlayerGrounded()
+    {
+        Vector3 spherePosition = transform.position + groundCheckOffset;
+        Collider[] hitColliders = Physics.OverlapSphere(spherePosition, groundCheckDistance, groundLayer);
+        return hitColliders.Length > 0;
+    }
+    //Bad written, needs refactor
+    private void HandleGravity()
+    {
+        if (!IsPlayerGrounded() || _fallSpeed > 0.0f)
+        {
+            _fallSpeed -= GravityForce * Time.deltaTime;
 
-        moveDir = _camera.transform.TransformDirection(moveDir);
-        moveDir.y = 0;
+            if (transform.position.y > IncreasedGravityAfter && _fallSpeed < 0)
+                _fallSpeed -= additionalGravity * Time.deltaTime;
 
-        if (moveDir.magnitude > 0.1f)
-            _currentSpeed = Mathf.Lerp(_currentSpeed, speed, Time.deltaTime * _accelerationFactor);
-        else 
-            _currentSpeed = Mathf.Lerp(_currentSpeed, 0, Time.deltaTime * _accelerationFactor);
+            _notGroundedTimer -= Time.deltaTime;
+            float notGroundedTimerMax = 0.2f;
+            if (_notGroundedTimer < 0f)
+            {
+                _notGroundedTimer = notGroundedTimerMax;
+                if (_footIK.enabled)
+                    _footIK.enabled = false;
+            }
+        }
+        else
+        {
+            _fallSpeed = -0.1f;
+            if (!_footIK.enabled)
+                _footIK.enabled = true;
+            _animator.SetBool(AnimJump, false);
+        }
 
-        _characterController.Move(moveDir.normalized * (_currentSpeed * Time.deltaTime));
+        _wasGroundedLastFrame = IsPlayerGrounded();
+        bool isMovingVertically =
+            _fallSpeed > 0.0f || !IsPlayerGrounded() || (!_wasGroundedLastFrame && IsPlayerGrounded());
 
-        _animator.SetFloat("Speed", _currentSpeed);
+        if (isMovingVertically)
+        {
+            _characterController.Move(Vector3.up * (_fallSpeed * Time.deltaTime));
+        }
+    }
 
-
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position + groundCheckOffset, groundCheckDistance);
     }
 
     //Code Only runs on the Server/ Host, not on the Client itself
     //Needs to be RPC in the End!
-    [ServerRpc]
+    /*[ServerRpc]
     private void RequestSpawnObjectServerRpc(ServerRpcParams serverRpcParams = default) 
     {
         SpawnObjectClientRpc();
@@ -85,7 +160,7 @@ public class PlayerLocomotion : NetworkBehaviour
     {
         _spawnedObjectTransform = Instantiate(spawnedObjectPrefab);
         _spawnedObjectTransform.GetComponent<NetworkObject>().Spawn(true);
-    }
+    }*/
 
     public override void OnNetworkSpawn()
     {
