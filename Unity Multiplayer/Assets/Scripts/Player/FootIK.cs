@@ -19,9 +19,7 @@ public class FootIK : NetworkBehaviour
     [Range(0, 0.2f)] [SerializeField] private float footOffset = 0.1f;
 
     private float _ikBlend = 1f;
-    [HideInInspector]
-    public bool isJumping;
-    
+
     [Tooltip("Blendspeed from animation to Ground-Snapping")]
     [SerializeField]
     private float toeAdjustmentSpeed = 5.0f;

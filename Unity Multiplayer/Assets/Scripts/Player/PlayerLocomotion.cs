@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cinemachine;
 using Unity.Collections;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -17,7 +18,7 @@ public class PlayerLocomotion : NetworkBehaviour
     [FormerlySerializedAs("speed")]
     [Header("Locomotion")]
     [SerializeField] private float maxSpeed;
-    private float _accelerationFactor = 2f;
+    private readonly float _accelerationFactor = 2f;
     private float _currentSpeed;
 
     [Header("Jumping")]
@@ -28,13 +29,15 @@ public class PlayerLocomotion : NetworkBehaviour
     private const float IncreasedGravityAfter = 1.5f;
     private bool _wasGroundedLastFrame;
     private float _notGroundedTimer;
+    private const float LandingThreshold = 2f;
 
 
     [Header("References")]
     private Animator _animator;
     private CharacterController _characterController;
+    //Both the same Vcameras
     [SerializeField] private GameObject _camera;
-    [SerializeField] private CinemachineVirtualCamera vcam;
+    [SerializeField] private CinemachineVirtualCamera playerVirtualCamera;
     private FootIK _footIK;
 
     //Not needed
@@ -57,90 +60,79 @@ public class PlayerLocomotion : NetworkBehaviour
     {
         if (!IsOwner) return; 
         
-        vcam.enabled = true;
+        playerVirtualCamera.enabled = true;
     }
 
     void Update()
     {
         if (!IsOwner) return;
-        Move();
-        Jump();
-        HandleGravity();
+
+        HandlePlayerMovement();
+        HandleJumpInput();
+        if (!_wasGroundedLastFrame && IsPlayerGrounded() && Mathf.Abs(_fallSpeed) > LandingThreshold)
+        {
+            TriggerLandingAnimation();
+        }
+        _wasGroundedLastFrame = IsPlayerGrounded();
+    }
+    private void TriggerLandingAnimation()
+    {
+        Debug.Log("Landed");
     }
 
-
-    private void Move()
+    private void HandlePlayerMovement()
     {
+        bool isGrounded = IsPlayerGrounded();
+        // Horizontal Movement
         Vector3 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-
         moveDirection = _camera.transform.TransformDirection(moveDirection);
         moveDirection.y = 0;
-
-        //If were moving, Lerp our speed up to maxspeed with accFactor per sec, else Lerp our speed down to 0 by that same accFactor.
-        _currentSpeed = moveDirection.magnitude > 0.1f
+        _currentSpeed = moveDirection.magnitude > 0.1f 
             ? Mathf.Lerp(_currentSpeed, maxSpeed, Time.deltaTime * _accelerationFactor)
             : Mathf.Lerp(_currentSpeed, 0, Time.deltaTime * _accelerationFactor);
-
-        _characterController.Move(moveDirection.normalized * (_currentSpeed * Time.deltaTime));
-
-        _animator.SetFloat(Speed, _currentSpeed);
-    }
-
-    private void Jump()
-    {
-        if (IsPlayerGrounded() && Input.GetButtonDown("Jump"))
+    
+        // Vertical Movement & Gravity
+        if (!isGrounded || _fallSpeed > 0.0f)
         {
-            _animator.SetBool(AnimJump, true);
-            //MoveVertically Method automatically handles the Jump if _fallSpeed is increased here
-            _fallSpeed = jumpForce;
-            //_animator.SetBool(AnimJump,  true);
-            if (_footIK.enabled)
-                _footIK.enabled = false;
+            _fallSpeed -= GravityForce * Time.deltaTime;
+            if (transform.position.y > IncreasedGravityAfter && _fallSpeed < 0)
+                _fallSpeed -= additionalGravity * Time.deltaTime;
         }
-        
+        else
+        {
+            
+            _fallSpeed = -0.1f;
+            _animator.SetBool(AnimJump, false);
+        }
+
+        Vector3 finalMove = moveDirection.normalized * (_currentSpeed * Time.deltaTime) + Vector3.up * (_fallSpeed * Time.deltaTime);
+        _characterController.Move(finalMove);
+    
+        // Animation
+        _animator.SetFloat(Speed, _currentSpeed);
+
+        if (isGrounded)
+            _footIK.enabled = true;
+        else
+            _footIK.enabled = false;
     }
+    private void HandleJumpInput()
+    {
+      if (IsPlayerGrounded() && Input.GetButtonDown("Jump"))
+      {
+          _animator.SetBool(AnimJump, true);
+          _fallSpeed = jumpForce;
+          _footIK.enabled = false;
+      }
+    }
+
     private bool IsPlayerGrounded()
     {
         Vector3 spherePosition = transform.position + groundCheckOffset;
         Collider[] hitColliders = Physics.OverlapSphere(spherePosition, groundCheckDistance, groundLayer);
         return hitColliders.Length > 0;
     }
-    //Bad written, needs refactor
-    private void HandleGravity()
-    {
-        if (!IsPlayerGrounded() || _fallSpeed > 0.0f)
-        {
-            _fallSpeed -= GravityForce * Time.deltaTime;
 
-            if (transform.position.y > IncreasedGravityAfter && _fallSpeed < 0)
-                _fallSpeed -= additionalGravity * Time.deltaTime;
-
-            _notGroundedTimer -= Time.deltaTime;
-            float notGroundedTimerMax = 0.2f;
-            if (_notGroundedTimer < 0f)
-            {
-                _notGroundedTimer = notGroundedTimerMax;
-                if (_footIK.enabled)
-                    _footIK.enabled = false;
-            }
-        }
-        else
-        {
-            _fallSpeed = -0.1f;
-            if (!_footIK.enabled)
-                _footIK.enabled = true;
-            _animator.SetBool(AnimJump, false);
-        }
-
-        _wasGroundedLastFrame = IsPlayerGrounded();
-        bool isMovingVertically =
-            _fallSpeed > 0.0f || !IsPlayerGrounded() || (!_wasGroundedLastFrame && IsPlayerGrounded());
-
-        if (isMovingVertically)
-        {
-            _characterController.Move(Vector3.up * (_fallSpeed * Time.deltaTime));
-        }
-    }
 
     void OnDrawGizmosSelected()
     {
