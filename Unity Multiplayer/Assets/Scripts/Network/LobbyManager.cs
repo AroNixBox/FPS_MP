@@ -84,7 +84,11 @@ public class LobbyManager : MonoBehaviour
             }
         }
     }
-    
+    [Command]
+    private void Test()
+    {
+        Debug.Log("Testin");
+    }
     //Updates the Lobby each 1.1 Seconds to make sure if Gamemode/ Map is changed, this will be sent to the Server!
     //Also Handling to notice when leaving a lobby
     private async void HandleLobbyPollForUpdates()

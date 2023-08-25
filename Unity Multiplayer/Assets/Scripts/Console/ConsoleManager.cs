@@ -137,8 +137,8 @@ public class ConsoleManager : MonoBehaviour
 
             if (i == currentSuggestionIndex)
             {
-                // Setze die blaue Hintergrundfarbe für den ausgewählten Vorschlag
-                currentSuggestions[i] = $"<mark=#0000FF80>{suggestion}</mark>";
+                currentSuggestions[i] = $"<mark=#ADD8E680>{suggestion}</mark>";
+
             }
         }
 
@@ -180,17 +180,11 @@ public class ConsoleManager : MonoBehaviour
         else
         {
             outputText.text += $"\nUnbekannter Befehl: {input}";
-            inputField.text = string.Empty;  // Diese Zeile setzt das Input-Feld zurück, wenn der Befehl nicht bekannt ist.
+            inputField.text = string.Empty;
         }
-
-        // Dies stellt sicher, dass nach jeder Eingabe automatisch zum Ende des Ausgabefensters gescrollt wird.
         AutoScrollToBottom();
     }
-
-
-
-// ... (Rest des Codes bleibt unverändert)
-
+    
 
     private void RegisterAllCommandMethods()
     {
