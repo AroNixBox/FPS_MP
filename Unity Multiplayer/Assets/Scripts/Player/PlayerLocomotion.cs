@@ -112,9 +112,9 @@ public class PlayerLocomotion : NetworkBehaviour
         _animator.SetFloat(Speed, _currentSpeed);
 
         if (isGrounded)
-            _footIK.enabled = true;
+            ToggleIKServerRpc(true);
         else
-            _footIK.enabled = false;
+            ToggleIKServerRpc(false);
     }
     private void HandleJumpInput()
     {
@@ -122,7 +122,6 @@ public class PlayerLocomotion : NetworkBehaviour
       {
           _animator.SetBool(AnimJump, true);
           _fallSpeed = jumpForce;
-          _footIK.enabled = false;
       }
     }
 
@@ -131,6 +130,24 @@ public class PlayerLocomotion : NetworkBehaviour
         Vector3 spherePosition = transform.position + groundCheckOffset;
         Collider[] hitColliders = Physics.OverlapSphere(spherePosition, groundCheckDistance, groundLayer);
         return hitColliders.Length > 0;
+    }
+    
+    [ServerRpc]
+    public void ToggleIKServerRpc(bool isActive, ServerRpcParams rpcParams = default)
+    {
+        ToggleIK(isActive);
+        ToggleIKClientRpc(isActive);
+    }
+
+    [ClientRpc]
+    public void ToggleIKClientRpc(bool isActive, ClientRpcParams rpcParams = default)
+    {
+        ToggleIK(isActive);
+    }
+
+    private void ToggleIK(bool isActive)
+    {
+        _footIK.enabled = isActive;
     }
 
 
