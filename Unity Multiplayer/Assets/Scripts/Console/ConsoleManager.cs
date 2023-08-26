@@ -13,8 +13,6 @@ public class ConsoleManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI suggestionText;
     [SerializeField] private TextMeshProUGUI outputText;
     [SerializeField] private ScrollRect scrollRect;
-
-
     
     private const string Indentation = "    ";
     private const int MaxCharsPerLine = 50;
@@ -198,6 +196,13 @@ public class ConsoleManager : MonoBehaviour
     }
 
 
+    // Innerhalb der Klasse ConsoleManager:
+
+    private List<string> GetAllPrefabsFromResources()
+    {
+        return Resources.LoadAll<GameObject>("").Select(obj => obj.name).ToList();
+    }
+
     private void UpdateSuggestion()
     {
         var rawInput = inputField.text;
@@ -214,10 +219,22 @@ public class ConsoleManager : MonoBehaviour
             return;
         }
 
-        _currentSuggestions = _commandMap
-            .Where(entry => entry.Key.StartsWith(rawInput, StringComparison.OrdinalIgnoreCase))
-            .Select(entry => $"{entry.Key} {entry.Value.ParameterHint}")
-            .ToList();
+        // Überprüfen, ob der Befehl mit "Spawn" beginnt.
+        if (rawInput.StartsWith("Spawn", StringComparison.OrdinalIgnoreCase))
+        {
+            var potentialObjectName = rawInput.Substring("Spawn".Length).Trim();
+            _currentSuggestions = GetAllPrefabsFromResources()
+                .Where(prefabName => prefabName.StartsWith(potentialObjectName, StringComparison.OrdinalIgnoreCase))
+                .Select(prefabName => $"Spawn {prefabName}")
+                .ToList();
+        }
+        else
+        {
+            _currentSuggestions = _commandMap
+                .Where(entry => entry.Key.StartsWith(rawInput, StringComparison.OrdinalIgnoreCase))
+                .Select(entry => $"{entry.Key} {entry.Value.ParameterHint}")
+                .ToList();
+        }
 
         if (_currentSuggestions.Count > 0)
         {
@@ -231,6 +248,7 @@ public class ConsoleManager : MonoBehaviour
     
         PositionSuggestionsAboveInput();
     }
+
 
 
     private void RenderSuggestionText()
@@ -353,5 +371,26 @@ public class ConsoleManager : MonoBehaviour
     {
         return System.Text.RegularExpressions.Regex.Replace(textWithColor, @"<.*?>", string.Empty);
     }
+
+    #region BaseCommands
     
+    [Command]
+    private void Help()
+    {
+        AddTextToConsole("Verfügbare Befehle:");
+
+        foreach (var command in _commandMap.Keys)
+        {
+            AddTextToConsole($"- {command} {_commandMap[command].ParameterHint}");
+        }
+    }
+    [Command]
+    private void ClearOutputLog()
+    {
+        outputText.text = string.Empty;
+        Debug.Log("Output log cleared!");
+    }
+
+    #endregion
+
 }
