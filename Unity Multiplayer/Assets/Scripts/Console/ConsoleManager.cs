@@ -8,18 +8,30 @@ using UnityEngine.UI;
 
 public class ConsoleManager : MonoBehaviour
 {
-    public TMP_InputField inputField;
-    public TextMeshProUGUI suggestionText;
-    public TextMeshProUGUI outputText;
-    public ScrollRect scrollRect;
 
-    private Dictionary<string, Action> commandMap = new Dictionary<string, Action>();
-    private int currentSuggestionIndex = 0;
-    private List<string> currentSuggestions = new List<string>();
-
+    [SerializeField] private TMP_InputField inputField;
+    [SerializeField] private TextMeshProUGUI suggestionText;
+    [SerializeField] private TextMeshProUGUI outputText;
+    [SerializeField] private ScrollRect scrollRect;
+    
+    private const string Indentation = "    ";
+    private const int MaxCharsPerLine = 50;
+    
+    private RectTransform _suggestionRectTransform;
+    private Dictionary<string, CommandData> _commandMap = new Dictionary<string, CommandData>();
+    private int _currentSuggestionIndex = 0;
+    private List<string> _currentSuggestions = new List<string>();
+    
+    private class CommandData
+    {
+        public Action<string> Action { get; set; }
+        public string ParameterHint { get; set; }
+    }
     private void Awake()
     {
         RegisterAllCommandMethods();
+        InitializeInputField();
+        _suggestionRectTransform = suggestionText.GetComponent<RectTransform>();
     }
 
     private void OnEnable()
@@ -32,57 +44,54 @@ public class ConsoleManager : MonoBehaviour
         Application.logMessageReceived -= HandleLog;
     }
 
-
-    void HandleLog(string logString, string stackTrace, LogType type)
+    private void Update()
     {
-        string formattedLog = logString;
-
-        switch (type)
-        {
-            case LogType.Warning:
-                formattedLog = $"<color=yellow>[Warning] {logString}</color>";
-                break;
-
-            case LogType.Error:
-                formattedLog = $"<color=red>[Error] {logString}</color>\n{stackTrace}\n";
-                break;
-
-            case LogType.Exception:
-                formattedLog = $"<color=red>[Exception] {logString}</color>\n{stackTrace}\n";
-                break;
-
-            // Du kannst weitere LogType-Fälle hinzufügen, wenn du möchtest.
-        }
-
-        outputText.text += formattedLog + "\n";
-    
-        LimitOutputTextLength();
-        AutoScrollToBottom();
+        HandleInputActions();
     }
-
-
-
-    void LimitOutputTextLength()
+    public void ExecuteCommand(string input)
     {
-        // Als Beispiel beschränken wir den Text auf 30 Zeilen:
-        int maxLines = 30;
-        var lines = outputText.text.Split('\n');
-        if (lines.Length > maxLines)
+        input = input.StartsWith(">") ? input.Substring(1) : input;
+
+        var commandParts = input.Split(' ', 2); // Befehl und Parameter trennen
+        var commandKey = commandParts[0];
+        var param = commandParts.Length > 1 ? commandParts[1] : null;
+
+        if (_commandMap.ContainsKey(commandKey))
         {
-            outputText.text = string.Join("\n", lines.Skip(lines.Length - maxLines));
+            AddTextToConsole($"<color=#008800>Befehl '{commandKey}' erfolgreich ausgeführt!</color>");
+            _commandMap[commandKey].Action(param); 
+
+            inputField.text = string.Empty;
+        }
+        else
+        {
+            AddTextToConsole($"<color=#FF6666>Unbekannter Befehl: {input}</color>");
+            inputField.text = string.Empty;
         }
     }
-    
+    private void HandleLog(string logString, string stackTrace, LogType type)
+    {
+        ProcessLogMessage(logString, stackTrace, type);
+    }
+    private void InitializeInputField()
+    {
+        inputField.text = ">";
+        inputField.caretPosition = 1;
+    }
     private void AutoScrollToBottom()
     {
-        // Dies stellt sicher, dass alle UI-Updates abgeschlossen sind, bevor es versucht zu scrollen.
         Canvas.ForceUpdateCanvases();
         scrollRect.verticalNormalizedPosition = 0f;
     }
 
-
-    private void Update()
+    private void HandleInputActions()
     {
+        if (string.IsNullOrEmpty(inputField.text) || !inputField.text.StartsWith(">"))
+        {
+            inputField.text = ">" + inputField.text;
+            inputField.caretPosition = inputField.text.Length;
+        }
+    
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             AutoFillCommand();
@@ -101,90 +110,131 @@ public class ConsoleManager : MonoBehaviour
         }
     }
 
-    // ...
+    private void ProcessLogMessage(string logString, string stackTrace, LogType type)
+    {
+        string formattedLog = logString;
+
+        switch (type)
+        {
+            case LogType.Warning:
+                formattedLog = $"<color=yellow>[Warning] {logString}</color>";
+                break;
+
+            case LogType.Error:
+                formattedLog = $"<color=red>[Error] {logString}</color>\n{stackTrace}\n";
+                break;
+
+            case LogType.Exception:
+                formattedLog = $"<color=red>[Exception] {logString}</color>\n{stackTrace}\n";
+                break;
+        }
+
+        AddTextToConsole(formattedLog);
+    }
+
+    private void AddTextToConsole(string text)
+    {
+        var words = text.Split(' ');
+        var currentLine = Indentation;
+
+        foreach (var word in words)
+        {
+            if (currentLine.Length + word.Length <= MaxCharsPerLine)
+            {
+                currentLine += word + " ";
+            }
+            else
+            {
+                outputText.text += "\n" + currentLine;
+                currentLine = Indentation + word + " ";
+            }
+        }
+
+        outputText.text += "\n" + currentLine;
+        AutoScrollToBottom();
+    }
+
+    private void PositionSuggestionsAboveInput()
+    {
+        _suggestionRectTransform.pivot = new Vector2(0.5f, 0f);
+        _suggestionRectTransform.anchorMin = new Vector2(0.5f, 0f);
+        _suggestionRectTransform.anchorMax = new Vector2(0.5f, 0f);
+
+        Vector3 newPosition = inputField.transform.position;
+        newPosition.y += inputField.textComponent.fontSize + 5;
+        _suggestionRectTransform.position = newPosition;
+    }
 
     private void UpdateSuggestion()
     {
-        var input = inputField.text;
+        var rawInput = inputField.text;
 
-        if (string.IsNullOrEmpty(input))
+        if (rawInput.StartsWith(">"))
+        {
+            rawInput = rawInput.Substring(1);
+        }
+
+        if (string.IsNullOrEmpty(rawInput))
         {
             suggestionText.text = string.Empty;
-            currentSuggestions.Clear();
+            _currentSuggestions.Clear();
             return;
         }
 
-        currentSuggestions = commandMap.Keys
-            .Where(key => key.StartsWith(input, StringComparison.OrdinalIgnoreCase))
+        _currentSuggestions = _commandMap
+            .Where(entry => entry.Key.StartsWith(rawInput, StringComparison.OrdinalIgnoreCase))
+            .Select(entry => $"{entry.Key} {entry.Value.ParameterHint}")
             .ToList();
 
-        if (currentSuggestions.Count > 0)
+        if (_currentSuggestions.Count > 0)
         {
-            currentSuggestionIndex %= currentSuggestions.Count; // Wraparound.
+            _currentSuggestionIndex %= _currentSuggestions.Count;
             RenderSuggestionText();
         }
         else
         {
             suggestionText.text = string.Empty;
         }
+    
+        PositionSuggestionsAboveInput();
     }
+
 
     private void RenderSuggestionText()
     {
-        for (int i = 0; i < currentSuggestions.Count; i++)
+        for (int i = 0; i < _currentSuggestions.Count; i++)
         {
-            string suggestion = currentSuggestions[i];
+            string suggestion = _currentSuggestions[i];
 
-            if (i == currentSuggestionIndex)
+            if (i == _currentSuggestionIndex)
             {
-                currentSuggestions[i] = $"<mark=#ADD8E680>{suggestion}</mark>";
-
+                _currentSuggestions[i] = $"<mark=#ADD8E680>{suggestion}</mark>";
             }
         }
 
-        suggestionText.text = string.Join("\n", currentSuggestions);
+        suggestionText.text = string.Join("\n", _currentSuggestions);
     }
 
     private void SelectNextSuggestion()
     {
-        if (currentSuggestions.Count > 0)
+        if (_currentSuggestions.Count > 0)
         {
-            currentSuggestionIndex++;
-            currentSuggestionIndex %= currentSuggestions.Count;
+            _currentSuggestionIndex++;
+            _currentSuggestionIndex %= _currentSuggestions.Count;
             RenderSuggestionText();
         }
     }
 
     private void SelectPreviousSuggestion()
     {
-        if (currentSuggestions.Count > 0)
+        if (_currentSuggestions.Count > 0)
         {
-            currentSuggestionIndex--;
-            if (currentSuggestionIndex < 0)
-                currentSuggestionIndex = currentSuggestions.Count - 1;
+            _currentSuggestionIndex--;
+            if (_currentSuggestionIndex < 0)
+                _currentSuggestionIndex = _currentSuggestions.Count - 1;
             RenderSuggestionText();
         }
     }
-    
-
-    public void ExecuteCommand(string input)
-    {
-        var commandKey = commandMap.Keys.FirstOrDefault(k => k.Equals(input, StringComparison.OrdinalIgnoreCase));
-
-        if (commandKey != null)
-        {
-            commandMap[commandKey].Invoke();
-            outputText.text += $"\nBefehl '{input}' erfolgreich ausgeführt!";
-            inputField.text = string.Empty;
-        }
-        else
-        {
-            outputText.text += $"\nUnbekannter Befehl: {input}";
-            inputField.text = string.Empty;
-        }
-        AutoScrollToBottom();
-    }
-    
 
     private void RegisterAllCommandMethods()
     {
@@ -194,30 +244,76 @@ public class ConsoleManager : MonoBehaviour
             {
                 if (Attribute.IsDefined(method, typeof(CommandAttribute)))
                 {
-                    var attribute = (CommandAttribute) Attribute.GetCustomAttribute(method, typeof(CommandAttribute));
+                    var attribute = (CommandAttribute)Attribute.GetCustomAttribute(method, typeof(CommandAttribute));
                     var commandName = attribute.CustomCommandName ?? method.Name;
-                    commandMap[commandName] = () => method.Invoke(monoBehaviour, null);
+                    var parameters = method.GetParameters();
+
+                    CommandData commandData = new CommandData();
+
+                    if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                    {
+                        commandData.Action = (param) => method.Invoke(monoBehaviour, new object[] { param });
+                        commandData.ParameterHint = "[string]";
+                    }
+                    else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(bool))
+                    {
+                        commandData.Action = (param) =>
+                        {
+                            bool boolValue;
+                            if (bool.TryParse(param, out boolValue))
+                            {
+                                method.Invoke(monoBehaviour, new object[] { boolValue }); 
+                            }
+                            else
+                            {
+                                AddTextToConsole($"<color=#FF6666>Falscher Parameterwert: {param}. Erwartet: true oder false.</color>");
+                            }
+                        };
+                        commandData.ParameterHint = "[bool]"; 
+                    }
+                    else if (parameters.Length == 0)
+                    {
+                        commandData.Action = _ => method.Invoke(monoBehaviour, null);
+                        commandData.ParameterHint = "";
+                    }
+                    else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(float))
+                    {
+                        commandData.Action = (param) =>
+                        {
+                            float floatValue;
+                            if (float.TryParse(param, out floatValue))
+                            {
+                                method.Invoke(monoBehaviour, new object[] { floatValue });
+                            }
+                            else
+                            {
+                                AddTextToConsole($"<color=#FF6666>Falscher Parameterwert: {param}. Erwartet: Eine Gleitkommazahl.</color>");
+                            }
+                        };
+                        commandData.ParameterHint = "[float]";
+                    }
+
+                    _commandMap[commandName] = commandData;
                 }
             }
         }
     }
 
+
+
     private void AutoFillCommand()
     {
-        if (currentSuggestionIndex >= 0 && currentSuggestionIndex < currentSuggestions.Count)
+        if (_currentSuggestionIndex >= 0 && _currentSuggestionIndex < _currentSuggestions.Count)
         {
-            var selectedSuggestion = RemoveColorTags(currentSuggestions[currentSuggestionIndex]);
+            var selectedSuggestion = RemoveColorTags(_currentSuggestions[_currentSuggestionIndex]);
             inputField.text = selectedSuggestion;
-            suggestionText.text = ""; // Nach dem Ausfüllen die Vorschlagstextanzeige leeren
+            suggestionText.text = ""; 
         }
     }
 
     private string RemoveColorTags(string textWithColor)
     {
-        // Farb-Tags entfernen
         return System.Text.RegularExpressions.Regex.Replace(textWithColor, @"<.*?>", string.Empty);
     }
-
-
-
+    
 }
