@@ -13,6 +13,8 @@ public class ConsoleManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI suggestionText;
     [SerializeField] private TextMeshProUGUI outputText;
     [SerializeField] private ScrollRect scrollRect;
+
+
     
     private const string Indentation = "    ";
     private const int MaxCharsPerLine = 50;
@@ -239,12 +241,17 @@ public class ConsoleManager : MonoBehaviour
 
             if (i == _currentSuggestionIndex)
             {
-                _currentSuggestions[i] = $"<mark=#ADD8E680>{suggestion}</mark>";
+                _currentSuggestions[i] = $"<mark=#0000FF80>{suggestion}</mark>"; // Blaue Markierung für den ausgewählten Vorschlag
+            }
+            else
+            {
+                _currentSuggestions[i] = $"<mark=#FFC0CB80>{suggestion}</mark>"; // Grüne Markierung für alle anderen Vorschläge
             }
         }
 
         suggestionText.text = string.Join("\n", _currentSuggestions);
     }
+
 
     private void SelectNextSuggestion()
     {
