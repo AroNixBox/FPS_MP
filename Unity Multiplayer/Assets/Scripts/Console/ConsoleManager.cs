@@ -16,6 +16,8 @@ public class ConsoleManager : MonoBehaviour
     
     private const string Indentation = "    ";
     private const int MaxCharsPerLine = 50;
+    private string _previousInputText;
+
     
     private RectTransform _suggestionRectTransform;
     private Dictionary<string, CommandData> _commandMap = new Dictionary<string, CommandData>();
@@ -104,11 +106,36 @@ public class ConsoleManager : MonoBehaviour
         {
             SelectNextSuggestion();
         }
+        if (Input.GetKeyDown(KeyCode.Backspace) && inputField.caretPosition == inputField.text.Length)
+        {
+            RemoveBracketedTextAtEnd();
+            return;
+        }
         else
         {
             UpdateSuggestion();
         }
+        _previousInputText = inputField.text;
     }
+
+    private void RemoveBracketedTextAtEnd()
+    {
+        if (_previousInputText.EndsWith("]") && !inputField.text.EndsWith("]"))
+        {
+            int lastOpenBracketIndex = inputField.text.LastIndexOf("[");
+        
+            // Wenn ein öffnender Klammer gefunden wurde, schneiden Sie den Text ab.
+            if (lastOpenBracketIndex >= 0)
+            {
+                inputField.text = inputField.text.Substring(0, lastOpenBracketIndex);
+                inputField.caretPosition = inputField.text.Length; // Setzen Sie den Cursor zurück ans Ende.
+            }
+        }
+    }
+
+
+
+
 
     private void ProcessLogMessage(string logString, string stackTrace, LogType type)
     {
@@ -163,7 +190,11 @@ public class ConsoleManager : MonoBehaviour
         Vector3 newPosition = inputField.transform.position;
         newPosition.y += inputField.textComponent.fontSize + 5;
         _suggestionRectTransform.position = newPosition;
+
+        float heightPerSuggestion = 20f;  // Dies kann je nach Bedarf angepasst werden.
+        _suggestionRectTransform.sizeDelta = new Vector2(_suggestionRectTransform.sizeDelta.x, _currentSuggestions.Count * heightPerSuggestion);
     }
+
 
     private void UpdateSuggestion()
     {

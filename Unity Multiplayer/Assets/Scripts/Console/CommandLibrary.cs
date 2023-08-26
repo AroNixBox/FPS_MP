@@ -10,4 +10,19 @@ public class CommandLibrary : MonoBehaviour
         ScreenCapture.CaptureScreenshot(filename + ".png");
         Debug.Log($"Screenshot saved as {filename}.png");
     }
+    [Command]
+    private void Spawn(string objectName)
+    {
+        GameObject prefab = Resources.Load<GameObject>(objectName);
+        if(prefab)
+        {
+            Instantiate(prefab, Vector3.zero, Quaternion.identity);
+            Debug.Log($"Spawned {objectName}!");
+        }
+        else
+        {
+            Debug.LogError($"No prefab named {objectName} found!");
+        }
+    }
+
 }
