@@ -199,7 +199,7 @@ GameObject:
   - component: {fileID: 6141158301264068972}
   - component: {fileID: 6141158301264068973}
   m_Layer: 5
-  m_Name: CommandLibrary
+  m_Name: SpectrumConsole
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
