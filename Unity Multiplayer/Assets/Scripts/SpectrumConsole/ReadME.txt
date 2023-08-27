@@ -10,7 +10,7 @@ Example: PrintThisWord [string]
 How to call it: PrintThisWord MyWord
 
 How to create your Custom Methods that are callable in the Console:
-Simply add before your Method: [Console]
+Simply add before your Method: [Console] AND add: using SpectrumConsole;
 It doesnt matter if the Method is Public or Private, it will get called. Make Sure the Method you wanna call is attached
 to a class that's active in the Scene!
 The Autofill will now also show you your own Functions and its requirement if there is one.

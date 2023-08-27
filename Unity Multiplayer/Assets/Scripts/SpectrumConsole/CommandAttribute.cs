@@ -1,12 +1,16 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method)]
-public class CommandAttribute : Attribute
+namespace SpectrumConsole
 {
-    public string CustomCommandName { get; private set; }
-
-    public CommandAttribute(string customCommandName = null)
-    {
-        CustomCommandName = customCommandName;
-    }
+   [AttributeUsage(AttributeTargets.Method)]
+   public class CommandAttribute : Attribute
+   {
+       public string CustomCommandName { get; private set; }
+   
+       public CommandAttribute(string customCommandName = null)
+       {
+           CustomCommandName = customCommandName;
+       }
+   } 
 }
+
