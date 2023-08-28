@@ -16,6 +16,9 @@ MonoBehaviour:
   minTimeBetweenShots: 0.2
   bodyshotDamage: 5
   headshotDamage: 20
-  inaccuracyOnBulletSpam: 2
+  inaccuracyOnBulletSpam: 0.5
   maxBullets: 20
   reloadTime: 4
+  maxConsecutiveShots: 8
+  recoveryDelay: 0.5
+  recoveryRate: 1

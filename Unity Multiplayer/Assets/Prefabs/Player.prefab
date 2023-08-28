@@ -12,7 +12,7 @@ GameObject:
   m_Layer: 0
   m_Name: BarrelEnd
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 4422084297763085224, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -24,7 +24,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8226579940343176}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -27.6, z: 84.3}
+  m_LocalPosition: {x: 0, y: 0, z: 84.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1158,7 +1158,7 @@ MonoBehaviour:
   weapons:
   - {fileID: 11400000, guid: 84e81bae25036be449dca4163d612751, type: 2}
   - {fileID: 11400000, guid: af74e7bf5e568fe4dab81e92bee9f00d, type: 2}
-  barrelEnd: {fileID: 5699087584855530797}
+  shootingStartingPos: {fileID: 5699087584855530797}
 --- !u!136 &1423331031814059167
 CapsuleCollider:
   m_ObjectHideFlags: 0
