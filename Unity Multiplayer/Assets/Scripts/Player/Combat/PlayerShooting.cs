@@ -109,12 +109,13 @@ public class PlayerShooting : NetworkBehaviour
     private void SwitchWeapon()
     {
         CurrentSelectedWeapon = weapons[_currentWeaponIndex];
+        //If is, Stop Reloading
         if (_isReloading && _reloadingCoroutine != null)
         {
             StopCoroutine(_reloadingCoroutine);
             _isReloading = false;
         }
-        //Before overwriting, change dictionaries bullets for this gun to my current bullets, so if I switch back, value will get saved
+        //Before overwriting, change dictionary entry: Bullets for this gun to my current bullets, so if I switch back, value gets load from dictionary
         _allWeaponBulletsStorage[_weaponName] = _currentBullets;
         LoadCurrentWeaponProperties();
     }
@@ -174,10 +175,10 @@ public class PlayerShooting : NetworkBehaviour
         }
         // TODO Fire Event that Shows current Bullets in PlayerUI HUD
         
-        Ray ray = new Ray(shootingStartingPos.position, GetInaccurateDirection(shootingStartingPos.forward));
+        Ray shootingRay = new Ray(shootingStartingPos.position, GetInaccurateDirection(shootingStartingPos.forward));
         Debug.DrawRay(shootingStartingPos.position, GetInaccurateDirection(shootingStartingPos.forward) * 100, Color.red, 1f);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity))
+        if (Physics.Raycast(shootingRay, out RaycastHit hit, Mathf.Infinity))
         {
             // TODO Handle here that can only hit Enemies, Manager needs to give Players A Team! NO FRIENDLY FIRE!
             if (hit.collider.TryGetComponent(out PlayerInfo info) && info.playerType == PlayerType.TeamRed)
@@ -226,6 +227,15 @@ public class PlayerShooting : NetworkBehaviour
         }
     }
 
+    private bool IsValidShot(Vector3 actualPosition, Vector3 perceivedPosition)
+    {
+        //Create a Tolerance foreach shot!
+        const float tolerance = 0.5f;
+        
+        //True if hit withhin tolerance radius, false if missed
+        return Vector3.Distance(actualPosition, perceivedPosition) <= tolerance;
+    }
+
 
     [ClientRpc]
     private void ApplyDamageClientRpc(ulong targetplayerID, uint recievedDamage)
@@ -237,15 +247,6 @@ public class PlayerShooting : NetworkBehaviour
         }
     }
 
-
-    private bool IsValidShot(Vector3 actualPosition, Vector3 perceivedPosition)
-    {
-        //Create a Tolerance foreach shot!
-        const float tolerance = 0.5f;
-        
-        //True if hit withhin tolerance radius, false if missed
-        return Vector3.Distance(actualPosition, perceivedPosition) <= tolerance;
-    }
 
     
 }

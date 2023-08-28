@@ -29,6 +29,7 @@ public class LobbyManager : MonoBehaviour
     private Dictionary<string, Lobby> currentLobbies = new Dictionary<string, Lobby>();
     
     //Saves all current Players to not destroy every player each 5 seconds, but rather only when changed
+    //Only if someone left/ joined the Playerlist will get generated newly.
     private List<string> previousPlayerIds = new List<string>();
 
 
