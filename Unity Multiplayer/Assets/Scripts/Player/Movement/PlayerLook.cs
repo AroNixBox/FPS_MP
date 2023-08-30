@@ -17,13 +17,20 @@ public class PlayerLook : NetworkBehaviour
     [Tooltip("Speed of rotation when body rotation is adjusted to fov rotation")]
     [SerializeField] private float rotationSpeed = 5.0f;
     
+    private float lookAtDistance = 5f; // Abstand des Look-At-Punkts von der Kamera
+    private Vector3 lookAtPoint;
     private float _xRotation;             
     private float _yRotation;             
     private bool _isRotatingCharacter;
     private void Update()
     {
         if (!IsOwner) return;
+        
+        lookAtPoint = transform.position + transform.forward * lookAtDistance;
 
+        // Lasse den Kopf des Spielers zum Look-At-Punkt schauen
+        headBone.LookAt(lookAtPoint);
+        
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
