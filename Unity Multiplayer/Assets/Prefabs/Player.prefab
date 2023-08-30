@@ -1089,13 +1089,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef73cda18a371094b9dab09a5c35c39e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  respawnRadius: 50
   playerControlComponents:
   - {fileID: 6658801564021918441}
   - {fileID: 3097192203249138768}
   - {fileID: 3242504682980541514}
   - {fileID: 4204799409396434546}
-  respawnTime: 5
   maxHealth: 100
+  respawnTime: 5
 --- !u!114 &2097131810294832663
 MonoBehaviour:
   m_ObjectHideFlags: 0
