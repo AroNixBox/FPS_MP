@@ -443,7 +443,7 @@ public class LobbyManager : MonoBehaviour
             throw;
         }
     }
-    public void PrintJoinedLobby()
+    private void PrintJoinedLobby()
     {
         PrintPlayers(_joinedLobby);
     }

@@ -5,6 +5,7 @@ using TMPro;
 using Unity.Netcode;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class NetworkManagerUI : MonoBehaviour
@@ -34,7 +35,6 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button authenticateButton;
     [SerializeField] private Button startGameButton;
     [SerializeField] private TextMeshProUGUI playerNameAuthenticate;
-
     private void Awake()
     {
         if (Instance == null) 
