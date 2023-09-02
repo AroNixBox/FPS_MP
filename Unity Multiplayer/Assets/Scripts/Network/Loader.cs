@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using SpectrumConsole;
 using UnityEngine;
@@ -11,7 +12,7 @@ public class Loader : NetworkBehaviour
     [HideInInspector] public int expectedClientsCount;
     private int _connectedClientsCount;
     
-    private Dictionary<string, PlayerData> playersData = new Dictionary<string, PlayerData>();
+    private Dictionary<ulong, PlayerData> playersData = new Dictionary<ulong, PlayerData>();
     private void Awake()
     {
         if (Instance == null)
@@ -40,54 +41,59 @@ public class Loader : NetworkBehaviour
             playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID, true);
         }
     }
-    
-    public PlayerData GetPlayerData(string playerId)
+    [Command]
+    public PlayerData GetPlayerData()
     {
-        return playersData.TryGetValue(playerId, out var data) ? data : null;
+        //This Method returns the current PlayerEntry
+        ulong localID = NetworkManager.Singleton.LocalClientId;
+        Debug.Log($"PlayerID: {playersData[localID].PlayerID}, Name: {playersData[localID].PlayerName}, Kills: {playersData[localID].Kills}");
+        return playersData.TryGetValue(NetworkManager.Singleton.LocalClientId, out var data) ? data : null;
     }
     [Command]
     private void PrintAllPlayerData()
     {
         foreach(var kvp in playersData)
         {
-            Debug.Log($"Player ID: {kvp.Key}, Name: {kvp.Value.PlayerName}, Kills: {kvp.Value.Kills}");
+            Debug.Log($"client ID: {kvp.Key}, PlayerID: {kvp.Value.PlayerID} Name: {kvp.Value.PlayerName}, Kills: {kvp.Value.Kills}");
         }
     }
 
     public void WaitForClientToConnect(string playerId, string playerName, int kills)
     {
-        // TODO add the clientID to the PlayerData, assign it here. Request from PlayerHealth When you die, assign the current players Death and the Shooters Kill!
+        //This clientID is not to use!!! Its giving always the value 1!!!!
         NetworkManager.Singleton.OnClientConnectedCallback += clientId => 
         {
-            UpdatePlayerDataServerRpc(playerId, playerName, kills);
+            UpdatePlayerDataServerRpc(NetworkManager.Singleton.LocalClientId, playerId, playerName, kills);
         };
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void UpdatePlayerDataServerRpc(string playerId, string playerName, int kills)
+    private void UpdatePlayerDataServerRpc(ulong clientID, string playerId, string playerName, int kills)
     {
-        if (!playersData.ContainsKey(playerId))
-            playersData[playerId] = new PlayerData();
+        if (!playersData.ContainsKey(clientID))
+            playersData[clientID] = new PlayerData();
 
-        playersData[playerId].PlayerName = playerName;
-        playersData[playerId].Kills = kills;
+        playersData[clientID].PlayerName = playerName;
+        playersData[clientID].Kills = kills;
+        playersData[clientID].PlayerID = playerId;
         
-        print($"{playersData[playerId].PlayerName} was added to Dict");
+        print($"{playersData[clientID].PlayerName} was added to Dict");
 
         // Informiere alle Clients über die Aktualisierung.
-        UpdateAllClientsAboutDataChangeClientRpc(playerId, playerName, kills);
+        UpdateAllClientsAboutDataChangeClientRpc(clientID, playerId, playerName, kills);
     }
 
     [ClientRpc]
-    private void UpdateAllClientsAboutDataChangeClientRpc(string playerId, string playerName, int kills)
+    private void UpdateAllClientsAboutDataChangeClientRpc(ulong clientID, string playerId, string playerName, int kills)
     {
-        if (!playersData.ContainsKey(playerId))
-            playersData[playerId] = new PlayerData();
+        if (!playersData.ContainsKey(clientID))
+            playersData[clientID] = new PlayerData();
         
-        print($"{playersData[playerId].PlayerName} was added to  on ClientSync");
+        print($"{playersData[clientID].PlayerName} was added to  on ClientSync");
 
-        playersData[playerId].PlayerName = playerName;
-        playersData[playerId].Kills = kills;
+        playersData[clientID].PlayerName = playerName;
+        playersData[clientID].Kills = kills;
+        playersData[clientID].PlayerID = playerId;
 
         _connectedClientsCount++;
         if (_connectedClientsCount >= expectedClientsCount)
@@ -96,10 +102,10 @@ public class Loader : NetworkBehaviour
             PrintAllPlayerData();
         }
     }
-    
+
 
     [Command]
-    public void ChangeScene()
+    private void ChangeScene()
     {
         if(!IsServer) return;
         
@@ -110,7 +116,10 @@ public class Loader : NetworkBehaviour
 [System.Serializable]
 public class PlayerData
 {
+    //Callable via the ClientID generated when loading the scene.
+    // TODO Check if ClientID changes on ReloadScene?
     public string PlayerName;
+    public string PlayerID;
     public int Kills;
 
     public PlayerData()
