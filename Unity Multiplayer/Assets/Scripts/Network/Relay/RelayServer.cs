@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport;
 using Unity.Networking.Transport.Relay;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
@@ -45,8 +46,7 @@ public class RelayServer : MonoBehaviour
        }
 
    }
-
-   public async void JoinRelay(string joinCode)
+    public async void JoinRelay(string joinCode)
    {
        try
        {

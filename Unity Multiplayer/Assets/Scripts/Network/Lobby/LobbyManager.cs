@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Services.Authentication;
@@ -39,8 +40,7 @@ public class LobbyManager : MonoBehaviour
     { 
         if (Instance == null) 
         { 
-            Instance = this; 
-            DontDestroyOnLoad(gameObject);
+            Instance = this;
         }
         else if (Instance != this) 
         { 
@@ -109,6 +109,8 @@ public class LobbyManager : MonoBehaviour
                     {
                         RelayServer.Instance.JoinRelay(_joinedLobby.Data["StartGame"].Value);
                         NetworkManagerUI.Instance.SetupGame();
+                        Loader.Instance.WaitForClientToConnect(AuthenticationService.Instance.PlayerId, _playerName, 0);
+                        Loader.Instance.expectedClientsCount = _joinedLobby.Players.Count;
                     }
 
                     _joinedLobby = null;
@@ -117,7 +119,7 @@ public class LobbyManager : MonoBehaviour
             }
         }
     }
-    
+
     //Should have a Button
     public async void CreateLobby()
     {
@@ -385,6 +387,7 @@ public class LobbyManager : MonoBehaviour
                 });
                 _joinedLobby = lobby;
                 NetworkManagerUI.Instance.SetupGame();
+                Loader.Instance.WaitForClientToConnect(AuthenticationService.Instance.PlayerId, _playerName, 0);
             }
             catch (LobbyServiceException e)
             {
