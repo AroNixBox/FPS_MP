@@ -109,8 +109,8 @@ public class LobbyManager : MonoBehaviour
                     {
                         RelayServer.Instance.JoinRelay(_joinedLobby.Data["StartGame"].Value);
                         NetworkManagerUI.Instance.SetupGame();
-                        Loader.Instance.WaitForClientToConnect(AuthenticationService.Instance.PlayerId, _playerName, 0);
                         Loader.Instance.expectedClientsCount = _joinedLobby.Players.Count;
+                        Loader.Instance.SetCurrentPlayerAndSetParams(AuthenticationService.Instance.PlayerId, _playerName);
                     }
 
                     _joinedLobby = null;
@@ -387,7 +387,8 @@ public class LobbyManager : MonoBehaviour
                 });
                 _joinedLobby = lobby;
                 NetworkManagerUI.Instance.SetupGame();
-                Loader.Instance.WaitForClientToConnect(AuthenticationService.Instance.PlayerId, _playerName, 0);
+                Loader.Instance.expectedClientsCount = _joinedLobby.Players.Count;
+                Loader.Instance.SetCurrentPlayerAndSetParams(AuthenticationService.Instance.PlayerId, _playerName);
             }
             catch (LobbyServiceException e)
             {

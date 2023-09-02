@@ -184,7 +184,7 @@ public class PlayerShooting : NetworkBehaviour
             if (hit.collider.TryGetComponent(out PlayerInfo info) && info.playerType == PlayerType.TeamRed)
             {
                 Vector3 enemyLocalPos = hit.collider.transform.position;
-                PlayerShotServerRpc(hit.collider.GetComponent<NetworkObject>().NetworkObjectId, enemyLocalPos, _bodyshotDamage);
+                PlayerShotServerRpc(hit.collider.GetComponent<NetworkObject>().NetworkObjectId, enemyLocalPos, _bodyshotDamage, NetworkManager.Singleton.LocalClientId);
             }
             else
             {
@@ -214,7 +214,7 @@ public class PlayerShooting : NetworkBehaviour
     }
 
     [ServerRpc]
-    private void PlayerShotServerRpc(ulong targetPlayerId, Vector3 enemyLocalPos, uint damageAmount)
+    private void PlayerShotServerRpc(ulong targetPlayerId, Vector3 enemyLocalPos, uint damageAmount, ulong shootersLocalClientID)
     {
         var targetPlayer = NetworkManager.SpawnManager.SpawnedObjects[targetPlayerId].GetComponent<PlayerHealth>();
 
@@ -222,7 +222,7 @@ public class PlayerShooting : NetworkBehaviour
         {
             if (IsValidShot(targetPlayer.transform.position, enemyLocalPos))
             {
-                ApplyDamageClientRpc(targetPlayerId, damageAmount);
+                ApplyDamageClientRpc(targetPlayerId, damageAmount, shootersLocalClientID);
             }
         }
     }
@@ -238,12 +238,12 @@ public class PlayerShooting : NetworkBehaviour
 
 
     [ClientRpc]
-    private void ApplyDamageClientRpc(ulong targetplayerID, uint recievedDamage)
+    private void ApplyDamageClientRpc(ulong targetplayerID, uint recievedDamage, ulong shootersLocalClientID)
     {
         var targetPlayer = NetworkManager.SpawnManager.SpawnedObjects[targetplayerID].GetComponent<PlayerHealth>();
         if (targetPlayer)
         {
-            targetPlayer.TakeDamage(recievedDamage, targetplayerID);
+            targetPlayer.TakeDamage(recievedDamage, shootersLocalClientID);
         }
     }
 

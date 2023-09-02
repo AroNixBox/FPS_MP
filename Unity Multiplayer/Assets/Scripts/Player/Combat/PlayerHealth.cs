@@ -30,32 +30,31 @@ public class PlayerHealth : NetworkBehaviour
         _currentHealth = maxHealth;
     }
 
-    public void TakeDamage(uint proposedDamageAmount, ulong playerID)
+    public void TakeDamage(uint proposedDamageAmount, ulong killersClientID)
     {
         if (!IsOwner) return;
         if (!isAlive && _state != CurrentState.Alive) return;
-        TakeDamageServerRpc(proposedDamageAmount, playerID);
+        TakeDamageServerRpc(proposedDamageAmount, killersClientID);
     }
 
     [ServerRpc]
-    void TakeDamageServerRpc(uint damageAmount, ulong playerID)
+    void TakeDamageServerRpc(uint damageAmount, ulong killersClientID)
     {
-        ApplyDamageClientRpc(damageAmount, playerID);
+        ApplyDamageClientRpc(damageAmount, killersClientID);
     }
 
     [ClientRpc]
-    void ApplyDamageClientRpc(uint damageAmount, ulong playerID)
+    void ApplyDamageClientRpc(uint damageAmount, ulong killersClientID)
     {
         if (!IsOwner) return;
         _currentHealth -= (int)damageAmount;
         if (!isAlive && _state != CurrentState.Dead)
         {
-            Die();
+            Die(killersClientID);
         }
-        Debug.Log($"Player {playerID} has {_currentHealth} hp left");
+        Debug.Log($"You have {_currentHealth} hp left");
     }
-    [Command]
-    private void Die()
+    private void Die(ulong killerClientsID)
     {
         if (!IsOwner) return;
         _state = CurrentState.Dead;
@@ -65,6 +64,8 @@ public class PlayerHealth : NetworkBehaviour
         {
             component.enabled = false;
         }
+        Loader.Instance.UpdatePlayerKillsServerRpc(killerClientsID);
+        Loader.Instance.UpdatePlayerDeathsServerRpc(NetworkManager.Singleton.LocalClientId);
         StartCoroutine(Respawn());
     }
     private IEnumerator Respawn()
