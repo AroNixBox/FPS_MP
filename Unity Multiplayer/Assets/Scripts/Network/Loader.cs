@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using SpectrumConsole;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.Rendering.UI;
 using UnityEngine.SceneManagement;
 
 public class Loader : NetworkBehaviour
@@ -39,20 +40,79 @@ public class Loader : NetworkBehaviour
 
     private void SceneManager_OnLoadEventComplete(string scenename, LoadSceneMode loadscenemode, List<ulong> clientscompleted, List<ulong> clientstimedout)
     {
+        int index = 0;
+
         foreach (var clientID in NetworkManager.Singleton.ConnectedClientsIds)
         {
-            // TODO Select Player Team logic here
-            // TODO Select Player SpawnPos Logic here
-            Transform playerTransform = Instantiate(playerPrefab);
+            PlayerType selectedTeam;
+            Transform selectedSpawnPoint;
+
+            // Wähle Spieler Team aus
+            if (index % 2 == 0)
+            {
+                selectedTeam = PlayerType.TeamBlue;
+                selectedSpawnPoint = GetSpawnPointForTeam(selectedTeam);
+            }
+            else
+            {
+                selectedTeam = PlayerType.TeamRed;
+                selectedSpawnPoint = GetSpawnPointForTeam(selectedTeam);
+            }
+
+            if (selectedSpawnPoint == null)
+            {
+                Debug.LogError($"Kein Spawnpunkt für Team {selectedTeam} gefunden!");
+                continue;
+            }
+            UpdatePlayersAboutTeamSelectionServerRpc(clientID, selectedTeam);
+            Transform playerTransform = Instantiate(playerPrefab, selectedSpawnPoint.position, selectedSpawnPoint.rotation);
+            PlayerInfo playerInfo = playerTransform.GetComponent<PlayerInfo>();
+            playerInfo.thisPlayersTeam = selectedTeam;
+            
+
             playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID, true);
+            index++;
         }
     }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void UpdatePlayersAboutTeamSelectionServerRpc(ulong clientID, PlayerType selectedTeam)
+    {
+        if (!IsServer) return;
+
+        playersData[clientID].SelectedTeam = selectedTeam;
+
+        UpdatePlayersAboutTeamSelectionClientRpc(clientID, selectedTeam);
+    }
+
+    [ClientRpc]
+    private void UpdatePlayersAboutTeamSelectionClientRpc(ulong clientID, PlayerType selectedTeam)
+    {
+        playersData[clientID].SelectedTeam = selectedTeam;
+    }
+
+    private Transform GetSpawnPointForTeam(PlayerType team)
+    {
+        var spawnManager = FindObjectOfType<SpawnManager>();
+        if (spawnManager != null)
+        {
+            return spawnManager.RequestSpawnPointForTeam(team);
+        }
+
+        return null;
+    }
+
+    public PlayerType GetPlayerTypeForClient(ulong clientID)
+    {
+        return playersData[clientID].SelectedTeam;
+    }
+
     [Command]
     public PlayerData GetPlayerData()
     {
         //This Method returns the current PlayerEntry
         ulong localID = NetworkManager.Singleton.LocalClientId;
-        Debug.Log($"PlayerID: {playersData[localID].PlayerID}, Name: {playersData[localID].PlayerName}, Kills: {playersData[localID].Kills}");
+        Debug.Log($"PlayerID: {playersData[localID].PlayerID}, Name: {playersData[localID].PlayerName}, Kills: {playersData[localID].Kills}, Team: {playersData[localID].SelectedTeam}");
         return playersData.TryGetValue(NetworkManager.Singleton.LocalClientId, out var data) ? data : null;
     }
     [Command]
@@ -62,7 +122,7 @@ public class Loader : NetworkBehaviour
         {
             print(expectedClientsCount);
             print(_connectedClientsCount);
-            Debug.Log($"client ID: {kvp.Key}, PlayerID: {kvp.Value.PlayerID} Name: {kvp.Value.PlayerName}, Kills: {kvp.Value.Kills}, Deaths: {kvp.Value.Deaths}");
+            Debug.Log($"client ID: {kvp.Key}, PlayerID: {kvp.Value.PlayerID} Name: {kvp.Value.PlayerName}, Kills: {kvp.Value.Kills}, Deaths: {kvp.Value.Deaths}, Team: {kvp.Value.SelectedTeam}");
         }
     }
     public void SetCurrentPlayerAndSetParams(string playerId, string playerName)
@@ -129,6 +189,11 @@ public class Loader : NetworkBehaviour
             Debug.LogWarning($"Client {clientID} not found in playersData dictionary.");
         }
     }
+    [Command]
+    private void GetSelectedTeam()
+    {
+        print("Players Team is: " + playersData[NetworkManager.Singleton.LocalClientId].SelectedTeam);
+    }
 
     [ClientRpc]
     private void NotifyAllClientsAboutChangedKillsClientRpc(ulong clientID, int newKillCount)
@@ -194,6 +259,7 @@ public class PlayerData
     public string PlayerID;
     public int Kills;
     public int Deaths;
+    public PlayerType SelectedTeam;
 
     public PlayerData()
     {

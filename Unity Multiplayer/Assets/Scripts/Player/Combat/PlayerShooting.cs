@@ -2,16 +2,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using TMPro;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering.UI;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 public class PlayerShooting : NetworkBehaviour
 {
-    [SerializeField]
-    private List<WeaponSO> weapons;
+    [SerializeField] private List<WeaponSO> weapons;
     private int _currentWeaponIndex = 0;
+    private PlayerInfo _myPlayerInfo;
 
     private WeaponSO CurrentSelectedWeapon;
     private Dictionary<string, int> _allWeaponBulletsStorage = new Dictionary<string, int>();
@@ -45,7 +48,12 @@ public class PlayerShooting : NetworkBehaviour
     {
         if(!IsOwner)
             return;
-
+        
+        _myPlayerInfo = GetComponent<PlayerInfo>();
+        if(_myPlayerInfo == null)
+        {
+            Debug.LogError("PlayerInfo component not found on the player!");
+        }
         CurrentSelectedWeapon = weapons[_currentWeaponIndex];
         LoadCurrentWeaponProperties();
     }
@@ -156,7 +164,7 @@ public class PlayerShooting : NetworkBehaviour
             Debug.LogError($"Current weapon is Null!{CurrentSelectedWeapon}");
         }
     }
-
+    
 
     private void Shoot()
     {
@@ -172,24 +180,25 @@ public class PlayerShooting : NetworkBehaviour
                 _reloadingCoroutine = StartCoroutine(Reload());
             }
             return;
-        }
+        } 
         // TODO Fire Event that Shows current Bullets in PlayerUI HUD
-        
         Ray shootingRay = new Ray(shootingStartingPos.position, GetInaccurateDirection(shootingStartingPos.forward));
         Debug.DrawRay(shootingStartingPos.position, GetInaccurateDirection(shootingStartingPos.forward) * 100, Color.red, 1f);
-
+        
         if (Physics.Raycast(shootingRay, out RaycastHit hit, Mathf.Infinity))
         {
             // TODO Handle here that can only hit Enemies, Manager needs to give Players A Team! NO FRIENDLY FIRE!
-            if (hit.collider.TryGetComponent(out PlayerInfo info) && info.playerType == PlayerType.TeamRed)
+            Debug.Log("Youre in Team: " + _myPlayerInfo.thisPlayersTeam);
+            if (hit.collider.TryGetComponent(out PlayerInfo info) && info.thisPlayersTeam != _myPlayerInfo.thisPlayersTeam)
             {
+                Debug.Log("You hit someone from team: " + info.thisPlayersTeam);
                 Vector3 enemyLocalPos = hit.collider.transform.position;
                 PlayerShotServerRpc(hit.collider.GetComponent<NetworkObject>().NetworkObjectId, enemyLocalPos, _bodyshotDamage, NetworkManager.Singleton.LocalClientId);
             }
             else
             {
                 //Hit Anything else than Enemy
-                Debug.Log(hit.collider.gameObject);
+                Debug.Log("Didnt hit any player, but:" + hit.collider.gameObject);
             }
         }
         //Debug.Log($"Shooting with weapon: {_weaponName}. Bodyshot Damage: {_bodyshotDamage}");
