@@ -41,6 +41,8 @@ public class Loader : NetworkBehaviour
     {
         foreach (var clientID in NetworkManager.Singleton.ConnectedClientsIds)
         {
+            // TODO Select Player Team logic here
+            // TODO Select Player SpawnPos Logic here
             Transform playerTransform = Instantiate(playerPrefab);
             playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID, true);
         }
