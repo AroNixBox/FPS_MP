@@ -1473,6 +1473,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1394787510905599524, guid: 1386f410dc3ebb94882fab2b366b57ca,
+        type: 3}
+      propertyPath: localUI
+      value: 
+      objectReference: {fileID: 5296682358943100122}
     - target: {fileID: 5296682359184637331, guid: 1386f410dc3ebb94882fab2b366b57ca,
         type: 3}
       propertyPath: m_Pivot.x
@@ -1585,6 +1590,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1386f410dc3ebb94882fab2b366b57ca, type: 3}
+--- !u!1 &5296682358943100122 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5296682358102515436, guid: 1386f410dc3ebb94882fab2b366b57ca,
+    type: 3}
+  m_PrefabInstance: {fileID: 5296682358943100121}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8618534058683425207
 PrefabInstance:
   m_ObjectHideFlags: 0

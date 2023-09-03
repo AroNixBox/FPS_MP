@@ -71,6 +71,7 @@ public class Loader : NetworkBehaviour
 
     private IEnumerator WaitForEveryoneThenGo()
     {
+        // TODO Find a better way to start the game.. Wait for everyone to connect then start, not some random Timer that runs down....
         yield return new WaitForSeconds(5);
         UpdatePlayerDataServerRpc(NetworkManager.Singleton.LocalClientId, _currentPlayerIDLocalStorage, _currentPlayerNameLocalStorage);
     }

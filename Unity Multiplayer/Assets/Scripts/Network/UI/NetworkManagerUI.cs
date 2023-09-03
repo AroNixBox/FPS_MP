@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.Netcode;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class NetworkManagerUI : MonoBehaviour
@@ -15,6 +13,7 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private GameObject authentificationWindow;
     [SerializeField] private GameObject lobbyWindow;
     [SerializeField] private GameObject joinedLobbyWindow;
+    [SerializeField] private GameObject localUI;
     
     [Header("Lobbies")]
     [SerializeField] private Transform contentPanel;
@@ -54,10 +53,12 @@ public class NetworkManagerUI : MonoBehaviour
         hostButton.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.StartHost();
+            HideLocalUI();
         });
         clientButton.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.StartClient();
+            HideLocalUI();
         });
         createLobbyButton.onClick.AddListener(() =>
         {
@@ -78,6 +79,11 @@ public class NetworkManagerUI : MonoBehaviour
 
         authenticateButton.onClick.AddListener(SendPlayerNameToLobby);
 
+    }
+
+    private void HideLocalUI()
+    {
+        localUI.SetActive(false);
     }
 
     private void SendPlayerNameToLobby()
