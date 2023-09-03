@@ -133,14 +133,14 @@ public class PlayerLocomotion : NetworkBehaviour
     }
     
     [ServerRpc]
-    public void ToggleIKServerRpc(bool isActive, ServerRpcParams rpcParams = default)
+    private void ToggleIKServerRpc(bool isActive, ServerRpcParams rpcParams = default)
     {
         ToggleIK(isActive);
         ToggleIKClientRpc(isActive);
     }
 
     [ClientRpc]
-    public void ToggleIKClientRpc(bool isActive, ClientRpcParams rpcParams = default)
+    private void ToggleIKClientRpc(bool isActive, ClientRpcParams rpcParams = default)
     {
         ToggleIK(isActive);
     }

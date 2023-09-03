@@ -1,22 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
 using SpectrumConsole;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-namespace SpectrumConsole
+public class SpawnPlayerLocalMultiplayer : NetworkBehaviour
 {
-    public class SpawnPlayerLocalMultiplayer : NetworkBehaviour
+    // TODO Remove this, this is just for Blockout trying
+    [SerializeField] private Transform playerPrefab;
+    [SerializeField] private Transform[] playerSpawnPosition;
+    [Command]
+    private void SpawnHostRequest()
     {
-        [SerializeField] private Transform playerPrefab;
-        [SerializeField] private Transform playerSpawnPosition;
-        [Command]
-        private void SpawnPlayerRequest()
+        foreach (var clientID in NetworkManager.Singleton.ConnectedClientsIds)
         {
-            Transform playerTransform = Instantiate(playerPrefab, playerSpawnPosition.position, playerSpawnPosition.rotation);
-            playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(NetworkManager.Singleton.LocalClientId, true);
+            Transform thisPlayersSpawnPos = playerSpawnPosition[Random.Range(0, playerSpawnPosition.Length)];
+            Transform playerTransform = Instantiate(playerPrefab, thisPlayersSpawnPos.position, thisPlayersSpawnPos.rotation);
+            playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID, true);
         }
     }
 }
-

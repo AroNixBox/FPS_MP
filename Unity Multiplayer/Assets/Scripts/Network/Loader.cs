@@ -20,6 +20,7 @@ public class Loader : NetworkBehaviour
     {
         if (Instance == null)
         {
+            //Because this is child of NetworkManager, this doesnt need DontDestroyOnLoad => When removing, need to add DDOL Here!
             Instance = this;
         }
         else
@@ -87,14 +88,9 @@ public class Loader : NetworkBehaviour
             _connectedClientsCount++;
         }
 
-        
         playersData[clientID].PlayerName = playerName;
-        //playersData[clientID].Kills = kills;
         playersData[clientID].PlayerID = playerId;
         
-        print($"{playersData[clientID].PlayerName} was added to Dict");
-
-        // Informiere alle Clients über die Aktualisierung.
         UpdateAllClientsAboutDataChangeClientRpc(clientID, playerId, playerName);
     }
 
@@ -104,7 +100,6 @@ public class Loader : NetworkBehaviour
         if (!playersData.ContainsKey(clientID))
         {
             playersData[clientID] = new PlayerData();
-            
         }
 
         playersData[clientID].PlayerName = playerName;
@@ -125,8 +120,6 @@ public class Loader : NetworkBehaviour
             playersData[clientID].Kills++;
 
             print($"{playersData[clientID].PlayerName} has {playersData[clientID].Kills} kills.");
-
-            // Informiere alle Clients über den aktualisierten Kill-Wert.
             NotifyAllClientsAboutChangedKillsClientRpc(clientID, playersData[clientID].Kills);
         }
         else
@@ -157,8 +150,6 @@ public class Loader : NetworkBehaviour
             playersData[clientID].Deaths++;
 
             print($"{playersData[clientID].PlayerName} has {playersData[clientID].Deaths} deaths.");
-
-            // Informiere alle Clients über den aktualisierten Death-Wert.
             NotifyAllClientsAboutChangedDeathsClientRpc(clientID, playersData[clientID].Deaths);
         }
         else
