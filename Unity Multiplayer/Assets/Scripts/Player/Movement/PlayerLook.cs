@@ -22,7 +22,9 @@ public class PlayerLook : NetworkBehaviour
     private float _xRotation;             
     private float _yRotation;             
     private bool _isRotatingCharacter;
-    private void Update()
+    
+
+    private void LateUpdate()
     {
         if (!IsOwner) return;
         
@@ -45,8 +47,7 @@ public class PlayerLook : NetworkBehaviour
         transform.rotation = playerRotation;
 
         float deltaRotation = Mathf.DeltaAngle(characterTransform.eulerAngles.y, _yRotation);
-        
-        if (Mathf.Abs(deltaRotation) > bodyFollowThreshold)
+        if (Mathf.Abs(deltaRotation) > bodyFollowThreshold || transform.position.magnitude > 0.1f || transform.position.magnitude < -0.1f)
         {
             _isRotatingCharacter = true;
         }

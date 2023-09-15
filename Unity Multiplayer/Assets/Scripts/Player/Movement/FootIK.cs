@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -48,6 +49,7 @@ public class FootIK : NetworkBehaviour
         SetFootIK(AvatarIKGoal.LeftFoot, leftFootPositionWeight * modifiedWeight, leftFootRotationWeight * modifiedWeight);
         AdjustLowerFootToGround();
     }
+
     private void AdjustLowerFootToGround()
     {
         Transform lowerFoot = (_leftFoot.position.y < _rightFoot.position.y) ? _leftFoot : _rightFoot;
@@ -61,13 +63,14 @@ public class FootIK : NetworkBehaviour
     private void AdjustBonesRecursive(Transform bone, float adjustmentAmount)
     {
         bone.position += new Vector3(0, adjustmentAmount, 0);
-
         //This doesnt do much at this point. Idea was to adjust the Rigs position, but this only asks for the child
-        foreach (Transform child in bone)
+        /*foreach (Transform child in bone)
         {
             AdjustBonesRecursive(child, adjustmentAmount);
-        }
+        }*/
     }
+
+
     private void SetFootIK(AvatarIKGoal foot, float positionWeight, float rotationWeight)
     {
         Ray ray = new Ray(_animator.GetIKPosition(foot) + Vector3.up * 0.5f, Vector3.down);

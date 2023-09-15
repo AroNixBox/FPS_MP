@@ -38,7 +38,7 @@ public class PlayerLocomotion : NetworkBehaviour
     //Both the same Vcameras
     [SerializeField] private GameObject _camera;
     [SerializeField] private CinemachineVirtualCamera playerVirtualCamera;
-    private FootIK _footIK;
+    //private FootIK _footIK;
 
     //Not needed
     [SerializeField] private Transform spawnedObjectPrefab;
@@ -51,9 +51,10 @@ public class PlayerLocomotion : NetworkBehaviour
 
     private void Awake()
     {
+        //TODO Add IK for Playerfoot
         _characterController = GetComponent<CharacterController>();
         _animator = GetComponent<Animator>();
-        _footIK = GetComponent<FootIK>();
+        //_footIK = GetComponent<FootIK>();
     }
 
     private void Start()
@@ -77,11 +78,13 @@ public class PlayerLocomotion : NetworkBehaviour
     }
     private void TriggerLandingAnimation()
     {
+        // TODO Landing animation
         Debug.Log("Landed");
     }
 
     private void HandlePlayerMovement()
     {
+        //TODO Diff anims for sidwalk, walk backwards, Sprint?
         bool isGrounded = IsPlayerGrounded();
         // Horizontal Movement
         Vector3 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
@@ -111,10 +114,10 @@ public class PlayerLocomotion : NetworkBehaviour
         // Animation
         _animator.SetFloat(Speed, _currentSpeed);
 
-        if (isGrounded)
+        /*if (isGrounded)
             ToggleIKServerRpc(true);
         else
-            ToggleIKServerRpc(false);
+            ToggleIKServerRpc(false);*/
     }
     private void HandleJumpInput()
     {
@@ -147,7 +150,7 @@ public class PlayerLocomotion : NetworkBehaviour
 
     private void ToggleIK(bool isActive)
     {
-        _footIK.enabled = isActive;
+        //_footIK.enabled = isActive;
     }
 
 
